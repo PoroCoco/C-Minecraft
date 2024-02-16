@@ -78,12 +78,29 @@ void shader_use(shader const *s){
     glUseProgram(s->id);
 }
 void shader_set_float4(shader *s, const char * var_name, float value1, float value2, float value3, float value4){
-    int vertexColorLocation = glGetUniformLocation(s->id, var_name);
-    if (vertexColorLocation == -1){
+    int uniformLocation = glGetUniformLocation(s->id, var_name);
+    if (uniformLocation == -1){
         fprintf(stderr,"Invalid uniform name : %s\n", var_name);
     }
-    glUniform4f(vertexColorLocation, value1, value2, value3, value4);
+    glUniform4f(uniformLocation, value1, value2, value3, value4);
 }
+
+void shader_set_int(shader *s, const char * var_name, int value){
+    int uniformLocation = glGetUniformLocation(s->id, var_name);
+    if (uniformLocation == -1){
+        fprintf(stderr,"Invalid uniform name : %s\n", var_name);
+    }
+    glUniform1i(uniformLocation, value);
+}
+
+void shader_set_float(shader *s, const char * var_name, float value){
+    int uniformLocation = glGetUniformLocation(s->id, var_name);
+    if (uniformLocation == -1){
+        fprintf(stderr,"Invalid uniform name : %s\n", var_name);
+    }
+    glUniform1f(uniformLocation, value);
+}
+
 
 void shader_cleanup(shader * s){
     glDeleteProgram(s->id);

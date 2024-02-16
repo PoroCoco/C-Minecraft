@@ -14,6 +14,7 @@ shader * shader_init(const char * vertexPath, const char * fragmentPath);
 void shader_use(shader const *s);
 void shader_set_float4(shader *s, const char * var_name, float value1, float value2, float value3, float value4);
 // void shader_set_bool(shader *s, const char * var_name, bool value);
-// void shader_set_int(shader *s, const char * var_name, int value);
+void shader_set_int(shader *s, const char * var_name, int value);
+void shader_set_float(shader *s, const char * var_name, float value);
 
 void shader_cleanup(shader * s);
