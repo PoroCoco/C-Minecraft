@@ -101,6 +101,13 @@ void shader_set_float(shader *s, const char * var_name, float value){
     glUniform1f(uniformLocation, value);
 }
 
+void shader_set_m4(shader *s, const char * var_name, mat4 value){
+    int uniformLocation = glGetUniformLocation(s->id, var_name);
+    if (uniformLocation == -1){
+        fprintf(stderr,"Invalid uniform name : %s\n", var_name);
+    }
+    glUniformMatrix4fv(uniformLocation, 1, GL_FALSE, (float*)value);
+}
 
 void shader_cleanup(shader * s){
     glDeleteProgram(s->id);

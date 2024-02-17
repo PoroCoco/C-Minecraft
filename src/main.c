@@ -1,16 +1,24 @@
-#include <stdio.h>
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
+
+#include <stdio.h>
+#include <math.h>
+#include <cglm/cglm.h> 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include <window.h>
 #include <shader.h>
-#include <math.h>
+#include <camera.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+
+#define WIDTH 800
+#define HEIGHT 600
 
 int main(int argc, char const *argv[])
 {
-    GLFWwindow* window = window_init();
+    camera * cam = camera_init();
+    GLFWwindow* window = window_init(WIDTH, HEIGHT, cam);
 
     // GLAD init
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -21,25 +29,78 @@ int main(int argc, char const *argv[])
 
     shader *s = shader_init("../shaders/shader.vert", "../shaders/shader.frag");
     
+    // // Rectangle
+    // float vertices[] = {
+    //     // positions          // colors           // texture coords
+    //     0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+    //     0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+    //     -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+    //     -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+    // };
+    // Cube
     float vertices[] = {
-        // positions          // colors           // texture coords
-        0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-        0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
+    
+    vec3 cubePositions[] = {
+        { 0.0f,  0.0f,  0.0f}, 
+        { 2.0f,  5.0f, -15.0f}, 
+        {-1.5f, -2.2f, -2.5f},  
+        {-3.8f, -2.0f, -12.3f},  
+        { 2.4f, -0.4f, -3.5f},  
+        {-1.7f,  3.0f, -7.5f},  
+        { 1.3f, -2.0f, -2.5f},  
+        { 1.5f,  2.0f, -2.5f}, 
+        { 1.5f,  0.2f, -1.5f}, 
+        {-1.3f,  1.0f, -1.5f}  
+    };
+
+    // Indices for rectangle
     unsigned int indices[] = {
         0, 1, 3, // first triangle
         1, 2, 3  // second triangle
     };
     
-    float texCoords[] = {
-        0.0f, 0.0f,  // lower-left corner  
-        1.0f, 0.0f,  // lower-right corner
-        0.5f, 1.0f   // top-center corner
-    };
-
-
     // Setting the vertex attributes and VBO inside a VAO (Vertex Array object)
     unsigned int VAO;
     glGenVertexArrays(1, &VAO);  
@@ -53,14 +114,14 @@ int main(int argc, char const *argv[])
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     // color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3* sizeof(float)));
-    glEnableVertexAttribArray(1);
+    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
+    // glEnableVertexAttribArray(1);
     // texture coord attribute 
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2); 
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1); 
 
     // Create the Element Object Buffer (the indices bufffer)
     unsigned int EBO;
@@ -120,16 +181,38 @@ int main(int argc, char const *argv[])
     shader_set_int(s, "texture2", 1);
 
 
+
+    glEnable(GL_DEPTH_TEST);
+
+    // Camera 
+    // vec3 cameraPos = {0.0f, 0.0f, 3.0f};
+    // vec3 cameraTarget = {0.0f, 0.0f, 0.0f}; // The center of the world
+    // vec3 cameraDirection = glm_vec3_norm(cameraPos - cameraTarget); // Vector substraction yields the vector between the two. Careful, the direction is actually from the origin to the camera
+    // vec3 up = {0.0f, 1.0f, 0.0f}; 
+    // vec3 cameraRight;
+    // glm_vec3_cross(up, cameraDirection, cameraRight);
+    // glm_vec3_norm(cameraRight);
+    // vec3 cameraUp;
+    // glm_vec3_cross(cameraDirection, cameraRight, cameraUp);
+    // is equivalent to 
+    // mat4 view;
+    // glm_lookat((vec3){0.0f, 0.0f, 3.0f}, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f}, view);
+
     // Render loop
     unsigned int frame_count = 0;
+    float last_frame_time = 0.0f;  
+    float delta_time = 0.0f;
     while(!window_should_close(window))
     {
-        window_process_input(window);
+        float current_frame_time = (float)glfwGetTime();
+        delta_time = current_frame_time - last_frame_time;
+        last_frame_time = current_frame_time;
+        window_process_input(window, delta_time);
 
         // Rendering
         // Clearing Screen
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Triangle render
 
@@ -138,14 +221,34 @@ int main(int argc, char const *argv[])
         float timeValue = (float)glfwGetTime();
         float greenValue = sinf(timeValue) / 2.0f + 0.5f;
         // shader_set_float4(s, "ourColor", 0.0f, greenValue, 0.0f, 1.0f);
-        shader_set_float4(s, "ourMove", (cosf(timeValue) / 2.0f), (sinf(timeValue) / 2.0f), 0.0f, 1.0f);
+        // shader_set_float4(s, "ourMove", (cosf(timeValue) / 2.0f), (sinf(timeValue) / 2.0f), 0.0f, 1.0f);
+
+
+        mat4 projection = GLM_MAT4_IDENTITY_INIT;
+        glm_perspective(glm_rad(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f, projection);
+        shader_set_m4(s, "view", cam->view);
+        shader_set_m4(s, "projection", projection);
+
+
+        // glm_rotate(trans, glm_rad(90.0f), (vec3){0.0f, 0.0f, 1.0f});
+        // glm_scale(trans, (vec3){0.75f, 0.75f, 0.75f}); 
+        // shader_set_m4(s, "transform", trans);
+
 
         glBindVertexArray(VAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture1);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture2);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        for(unsigned int i = 0; i < 10; i++){
+            mat4 model = GLM_MAT4_IDENTITY_INIT;
+            glm_translate(model, cubePositions[i]);
+            float angle = 20.0f * i; 
+            glm_rotate(model, timeValue * glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f}); 
+            shader_set_m4(s, "model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+            // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        }
         glBindVertexArray(0);
 
         glfwSwapBuffers(window);
@@ -154,12 +257,12 @@ int main(int argc, char const *argv[])
         frame_count++;
     }
 
-
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
     shader_cleanup(s);
+    camera_cleanup(cam);
 
-    window_cleanup();
+    window_cleanup(window);
     return 0;
 }
