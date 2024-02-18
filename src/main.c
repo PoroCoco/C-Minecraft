@@ -10,10 +10,13 @@
 #include <window.h>
 #include <shader.h>
 #include <camera.h>
+#include <block.h>
+#include <chunk.h>
 
 
-#define WIDTH 800
-#define HEIGHT 600
+#define WIDTH 1600
+#define HEIGHT 1200
+
 
 int main(int argc, char const *argv[])
 {
@@ -38,7 +41,7 @@ int main(int argc, char const *argv[])
     //     -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
     // };
     // Cube
-    float vertices[] = {
+    static const float vertices[] = {
         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
@@ -82,18 +85,6 @@ int main(int argc, char const *argv[])
         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
     
-    vec3 cubePositions[] = {
-        { 0.0f,  0.0f,  0.0f}, 
-        { 2.0f,  5.0f, -15.0f}, 
-        {-1.5f, -2.2f, -2.5f},  
-        {-3.8f, -2.0f, -12.3f},  
-        { 2.4f, -0.4f, -3.5f},  
-        {-1.7f,  3.0f, -7.5f},  
-        { 1.3f, -2.0f, -2.5f},  
-        { 1.5f,  2.0f, -2.5f}, 
-        { 1.5f,  0.2f, -1.5f}, 
-        {-1.3f,  1.0f, -1.5f}  
-    };
 
     // Indices for rectangle
     unsigned int indices[] = {
@@ -111,8 +102,14 @@ int main(int argc, char const *argv[])
     glGenBuffers(1, &VBO);  
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     // Sends the data
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
+    // glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    chunk * c = chunk_init(0,0);
+    int vertices_count;
+    float * chunk_vertices = chunk_generate_vertices(c, &vertices_count);
+    printf("main vertice count = %d\n main size %zu ", vertices_count, sizeof(float) * vertices_count * 5);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices_count * 5, chunk_vertices, GL_STATIC_DRAW);
+    free(chunk_vertices);
+    chunk_cleanup(c);
     // position attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -225,7 +222,7 @@ int main(int argc, char const *argv[])
 
 
         mat4 projection = GLM_MAT4_IDENTITY_INIT;
-        glm_perspective(glm_rad(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f, projection);
+        glm_perspective(glm_rad(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 10000.0f, projection);
         shader_set_m4(s, "view", cam->view);
         shader_set_m4(s, "projection", projection);
 
@@ -240,15 +237,20 @@ int main(int argc, char const *argv[])
         glBindTexture(GL_TEXTURE_2D, texture1);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture2);
-        for(unsigned int i = 0; i < 10; i++){
-            mat4 model = GLM_MAT4_IDENTITY_INIT;
-            glm_translate(model, cubePositions[i]);
-            float angle = 20.0f * i; 
-            glm_rotate(model, timeValue * glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f}); 
-            shader_set_m4(s, "model", model);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-            // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        // Wireframe
+        glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+        for (size_t x = 0; x < 1; x++){
+            for (size_t z = 0; z < 1; z++){
+                mat4 model = GLM_MAT4_IDENTITY_INIT;
+                glm_translate(model, (vec3){(float)x*16, 0.0, (float)z*16});
+                shader_set_m4(s, "model", model);
+                glDrawArrays(GL_TRIANGLES, 0, vertices_count);
+            }
         }
+        
+        
+        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
         glBindVertexArray(0);
 
         glfwSwapBuffers(window);
