@@ -2,13 +2,13 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include <cglm/cglm.h> 
+
 #include <world.h>
 
 world * world_init(){
     world * w = malloc(sizeof(*w));
     assert(w);
-    w->center_chunk = (point){.x = 0, .z = 0};
-    printf("world init center at %d,%d\n", w->center_chunk.x, w->center_chunk.z);
     int index = 0;
     for (int z = -RENDER_DISTANCE/2 ; z < RENDER_DISTANCE/2 ; z++){
         for (int x = -RENDER_DISTANCE/2;  x < RENDER_DISTANCE/2; x++){
@@ -17,6 +17,7 @@ world * world_init(){
         }
     }
 
+    w->center_chunk = world_get_loaded_chunk(w, 0, 0);
     w->cached_chunks_count = 0;
     w->cached_chunks = NULL;
     
@@ -51,11 +52,11 @@ chunk * world_get_chunk_cache(world * w, int x , int z){
 }
 
 bool world_update_position(world * w, float x, float z){
-    point new_center = {.x = ((int)x) /CHUNK_X_SIZE, .z = ((int)z) / CHUNK_Z_SIZE};
+    int new_center_x = ((int)x) / CHUNK_X_SIZE + (x<0.0 ? -1 : 0);
+    int new_center_z = ((int)z) / CHUNK_Z_SIZE + (z<0.0 ? -1 : 0);
 
-    if (new_center.x != w->center_chunk.x || new_center.z != w->center_chunk.z){
-        printf("new center chunk %d,%d (previous %d,%d)\n", new_center.x, new_center.z, w->center_chunk.x, w->center_chunk.z);
-        w->center_chunk = new_center;
+    if (new_center_x != w->center_chunk->x || new_center_z != w->center_chunk->z){
+        printf("new center chunk %d,%d (previous %d,%d)\n", new_center_x, new_center_z, w->center_chunk->x, w->center_chunk->z);
         int index = 0;
         chunk * chunk;
         for (int z = -RENDER_DISTANCE/2 ; z < RENDER_DISTANCE/2 ; z++){
@@ -67,18 +68,48 @@ bool world_update_position(world * w, float x, float z){
                 }
 
                 // Get new chunk from cache or generate it
-                if (chunk_in_cache(w, x + w->center_chunk.x, z + w->center_chunk.z)){
-                    w->loaded_chunks[index] = world_get_chunk_cache(w, x + w->center_chunk.x, z + w->center_chunk.z);
+                if (chunk_in_cache(w, x + new_center_x, z + new_center_z)){
+                    w->loaded_chunks[index] = world_get_chunk_cache(w, x + new_center_x, z + new_center_z);
                     assert(w->loaded_chunks[index]);
                 }else{
-                    w->loaded_chunks[index] = chunk_init(x + w->center_chunk.x, z + w->center_chunk.z);
+                    w->loaded_chunks[index] = chunk_init(x + new_center_x, z + new_center_z);
                 }
                 index++;
             }
         }
+        w->center_chunk = world_get_loaded_chunk(w, new_center_x, new_center_z);
+        assert(w->center_chunk);
         return true;
     }
     return false;
+}
+
+chunk * world_get_loaded_chunk(world *w, int x, int z){
+    for (size_t i = 0; i < TOTAL_CHUNKS; i++){
+        if (w->loaded_chunks[i]->x == x && w->loaded_chunks[i]->z == z){
+            return w->loaded_chunks[i];
+        }
+    }
+
+    fprintf(stderr, "Tried to get a loaded chunk that wasn't loaded : %d,%d\n", x, z);
+    return NULL;
+}
+
+chunk * world_get_chunk_direction(world *w, chunk const * c, direction d){
+    switch (d)
+    {
+    case NORTH:
+        return world_get_loaded_chunk(w, c->x, c->z - 1);
+    case SOUTH:
+        return world_get_loaded_chunk(w, c->x, c->z + 1);
+    case WEST:
+        return world_get_loaded_chunk(w, c->x - 1, c->z);
+    case EAST:
+        return world_get_loaded_chunk(w, c->x + 1, c->z);
+    default:
+        fprintf(stderr, "Tried to get a chunk in the TOP or BOTTOM direction !\n");
+        return (chunk *)c;
+    }
 }
 
 
