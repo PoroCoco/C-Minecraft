@@ -12,11 +12,22 @@
 #include <camera.h>
 #include <block.h>
 #include <chunk.h>
+#include <world.h>
 
 
 #define WIDTH 1600
 #define HEIGHT 1200
 
+
+void regen_world_vertices(world *w, unsigned int *VBO, int *vertices_count){
+    glDeleteBuffers(TOTAL_CHUNKS, VBO);
+    glGenBuffers(TOTAL_CHUNKS, VBO);
+    for (int i = 0; i < TOTAL_CHUNKS; i++){
+        glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
+        float * chunk_vertices = chunk_get_vertices(w->loaded_chunks[i], &vertices_count[i]);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices_count[i] * 5, chunk_vertices, GL_STATIC_DRAW);
+    }
+}
 
 int main(int argc, char const *argv[])
 {
@@ -98,18 +109,20 @@ int main(int argc, char const *argv[])
     glBindVertexArray(VAO);
     
     // Create the Vertex Buffer Object
-    unsigned int VBO;
-    glGenBuffers(1, &VBO);  
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    unsigned int VBO[TOTAL_CHUNKS];
+    glGenBuffers(TOTAL_CHUNKS, VBO);
     // Sends the data
     // glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    chunk * c = chunk_init(0,0);
-    int vertices_count;
-    float * chunk_vertices = chunk_generate_vertices(c, &vertices_count);
-    printf("main vertice count = %d\n main size %zu ", vertices_count, sizeof(float) * vertices_count * 5);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices_count * 5, chunk_vertices, GL_STATIC_DRAW);
-    free(chunk_vertices);
-    chunk_cleanup(c);
+
+    int vertices_count[TOTAL_CHUNKS];
+    world * w = world_init();
+    for (int i = 0; i < TOTAL_CHUNKS; i++){
+        glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
+        float * chunk_vertices = chunk_get_vertices(w->loaded_chunks[i], &vertices_count[i]);
+        printf("chunk %d count %d\n", i, vertices_count[i]);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices_count[i] * 5, chunk_vertices, GL_STATIC_DRAW);
+    }
+    
     // position attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -206,6 +219,12 @@ int main(int argc, char const *argv[])
         last_frame_time = current_frame_time;
         window_process_input(window, delta_time);
 
+        // Update logic
+        if (world_update_position(w, cam->cameraPos[0], cam->cameraPos[2])){
+            regen_world_vertices(w, VBO, vertices_count);
+        }
+
+
         // Rendering
         // Clearing Screen
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -238,15 +257,27 @@ int main(int argc, char const *argv[])
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture2);
         // Wireframe
-        glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-        for (size_t x = 0; x < 1; x++){
-            for (size_t z = 0; z < 1; z++){
-                mat4 model = GLM_MAT4_IDENTITY_INIT;
-                glm_translate(model, (vec3){(float)x*16, 0.0, (float)z*16});
-                shader_set_m4(s, "model", model);
-                glDrawArrays(GL_TRIANGLES, 0, vertices_count);
-            }
+        // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
+        for (int i = 0 ; i < TOTAL_CHUNKS ; i++){
+            glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
+            mat4 model = GLM_MAT4_IDENTITY_INIT;
+            vec3 translate = {(float)(w->loaded_chunks[i]->x) * 16.0, (float)0, (float)(w->loaded_chunks[i]->z)*16.0};
+            glm_translate(model, translate);
+            shader_set_m4(s, "model", model);
+            glDrawArrays(GL_TRIANGLES, 0, vertices_count[i]);
         }
+        
+        // for (size_t i = 0; i < TOTAL_CHUNKS; i++){
+        //     glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
+        //     mat4 model = GLM_MAT4_IDENTITY_INIT;
+        //     // glm_translate(model, (vec3){(float)x*16, 0.0, (float)z*16});
+        //     // vec3 translate = {(float)i, (float)i, (float)0};
+        //     vec3 translate = {(float)w->loaded_chunks[i]->x * 16.0, (float)i, (float)0};
+        //     glm_vec3_print(translate, stdout);
+        //     glm_translate(model, translate);
+        //     shader_set_m4(s, "model", model);
+        //     glDrawArrays(GL_TRIANGLES, 0, vertices_count[i]);
+        // }
         
         
         // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -260,7 +291,7 @@ int main(int argc, char const *argv[])
     }
 
     glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(TOTAL_CHUNKS, VBO);
     glDeleteBuffers(1, &EBO);
     shader_cleanup(s);
     camera_cleanup(cam);
