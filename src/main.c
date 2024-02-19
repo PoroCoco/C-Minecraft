@@ -19,18 +19,27 @@
 #define HEIGHT 1200
 
 
-void regen_world_vertices(world *w, unsigned int *VBO, int *vertices_count){
+void regen_world_vertices(world *w, unsigned int *VBO, unsigned int *VAO, int *vertices_count){
+    glDeleteVertexArrays(TOTAL_CHUNKS, VAO);
     glDeleteBuffers(TOTAL_CHUNKS, VBO);
+    glGenVertexArrays(TOTAL_CHUNKS, VAO);
     glGenBuffers(TOTAL_CHUNKS, VBO);
     for (int i = 0; i < TOTAL_CHUNKS; i++){
+        glBindVertexArray(VAO[i]);
         glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
         float * chunk_vertices = chunk_get_vertices(w->loaded_chunks[i], &vertices_count[i]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices_count[i] * 5, chunk_vertices, GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1); 
     }
 }
 
 int main(int argc, char const *argv[])
 {
+    srand(654);
+    world * w = world_init();
     camera * cam = camera_init();
     GLFWwindow* window = window_init(WIDTH, HEIGHT, cam);
 
@@ -43,59 +52,6 @@ int main(int argc, char const *argv[])
 
     shader *s = shader_init("../shaders/shader.vert", "../shaders/shader.frag");
     
-    // // Rectangle
-    // float vertices[] = {
-    //     // positions          // colors           // texture coords
-    //     0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-    //     0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-    //     -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-    //     -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
-    // };
-    // Cube
-    static const float vertices[] = {
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-    };
-    
 
     // Indices for rectangle
     unsigned int indices[] = {
@@ -104,41 +60,40 @@ int main(int argc, char const *argv[])
     };
     
     // Setting the vertex attributes and VBO inside a VAO (Vertex Array object)
-    unsigned int VAO;
-    glGenVertexArrays(1, &VAO);  
-    glBindVertexArray(VAO);
+    unsigned int VAO[TOTAL_CHUNKS];
+    glGenVertexArrays(TOTAL_CHUNKS, VAO);  
     
     // Create the Vertex Buffer Object
     unsigned int VBO[TOTAL_CHUNKS];
     glGenBuffers(TOTAL_CHUNKS, VBO);
+
     // Sends the data
     // glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
     int vertices_count[TOTAL_CHUNKS];
-    world * w = world_init();
+
     for (int i = 0; i < TOTAL_CHUNKS; i++){
+        glBindVertexArray(VAO[i]);
         glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
         float * chunk_vertices = chunk_get_vertices(w->loaded_chunks[i], &vertices_count[i]);
-        printf("chunk %d count %d\n", i, vertices_count[i]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices_count[i] * 5, chunk_vertices, GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1); 
     }
     
     // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
     // color attribute
     // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
     // glEnableVertexAttribArray(1);
     // texture coord attribute 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1); 
 
     // Create the Element Object Buffer (the indices bufffer)
-    unsigned int EBO;
-    glGenBuffers(1, &EBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    // Sends the data
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); 
+    // unsigned int EBO;
+    // glGenBuffers(1, &EBO);
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    // // Sends the data
+    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); 
 
     // Unbinds the VBO
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -220,9 +175,9 @@ int main(int argc, char const *argv[])
         window_process_input(window, delta_time);
 
         // Update logic
-        if (world_update_position(w, cam->cameraPos[0], cam->cameraPos[2])){
-            regen_world_vertices(w, VBO, vertices_count);
-        }
+        world_update_position(w, cam->cameraPos[0], cam->cameraPos[2]);
+        regen_world_vertices(w, VBO, VAO, vertices_count);
+        
 
 
         // Rendering
@@ -251,34 +206,21 @@ int main(int argc, char const *argv[])
         // shader_set_m4(s, "transform", trans);
 
 
-        glBindVertexArray(VAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2);
+        
         // Wireframe
         // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
         for (int i = 0 ; i < TOTAL_CHUNKS ; i++){
-            glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
+            glBindVertexArray(VAO[i]);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, texture1);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, texture2);
             mat4 model = GLM_MAT4_IDENTITY_INIT;
             vec3 translate = {(float)(w->loaded_chunks[i]->x) * CHUNK_X_SIZE, (float)0, (float)(w->loaded_chunks[i]->z)*CHUNK_Z_SIZE};
             glm_translate(model, translate);
             shader_set_m4(s, "model", model);
             glDrawArrays(GL_TRIANGLES, 0, vertices_count[i]);
         }
-        
-        // for (size_t i = 0; i < TOTAL_CHUNKS; i++){
-        //     glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
-        //     mat4 model = GLM_MAT4_IDENTITY_INIT;
-        //     // glm_translate(model, (vec3){(float)x*16, 0.0, (float)z*16});
-        //     // vec3 translate = {(float)i, (float)i, (float)0};
-        //     vec3 translate = {(float)w->loaded_chunks[i]->x * 16.0, (float)i, (float)0};
-        //     glm_vec3_print(translate, stdout);
-        //     glm_translate(model, translate);
-        //     shader_set_m4(s, "model", model);
-        //     glDrawArrays(GL_TRIANGLES, 0, vertices_count[i]);
-        // }
-        
         
         // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
@@ -290,9 +232,9 @@ int main(int argc, char const *argv[])
         frame_count++;
     }
 
-    glDeleteVertexArrays(1, &VAO);
+    glDeleteVertexArrays(TOTAL_CHUNKS, VAO);
     glDeleteBuffers(TOTAL_CHUNKS, VBO);
-    glDeleteBuffers(1, &EBO);
+    // glDeleteBuffers(1, &EBO);
     shader_cleanup(s);
     camera_cleanup(cam);
 
