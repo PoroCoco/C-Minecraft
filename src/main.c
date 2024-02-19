@@ -261,7 +261,7 @@ int main(int argc, char const *argv[])
         for (int i = 0 ; i < TOTAL_CHUNKS ; i++){
             glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
             mat4 model = GLM_MAT4_IDENTITY_INIT;
-            vec3 translate = {(float)(w->loaded_chunks[i]->x) * 16.0, (float)0, (float)(w->loaded_chunks[i]->z)*16.0};
+            vec3 translate = {(float)(w->loaded_chunks[i]->x) * CHUNK_X_SIZE, (float)0, (float)(w->loaded_chunks[i]->z)*CHUNK_Z_SIZE};
             glm_translate(model, translate);
             shader_set_m4(s, "model", model);
             glDrawArrays(GL_TRIANGLES, 0, vertices_count[i]);

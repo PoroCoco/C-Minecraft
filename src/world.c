@@ -51,7 +51,7 @@ chunk * world_get_chunk_cache(world * w, int x , int z){
 }
 
 bool world_update_position(world * w, float x, float z){
-    point new_center = {.x = ((int)x) /16, .z = ((int)z) / 16};
+    point new_center = {.x = ((int)x) /CHUNK_X_SIZE, .z = ((int)z) / CHUNK_Z_SIZE};
 
     if (new_center.x != w->center_chunk.x || new_center.z != w->center_chunk.z){
         printf("new center chunk %d,%d (previous %d,%d)\n", new_center.x, new_center.z, w->center_chunk.x, w->center_chunk.z);
