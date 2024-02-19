@@ -5,13 +5,14 @@
 #include <assert.h>
 
 #include <player.h>
+#include <direction.h>
 #include <chunk.h>
 
 
 
 // Return the index of the first block hitten and fill the final chunk with the chunk the block is part of 
 int raycast_break(player * p, chunk ** final_chunk){
-    const float step = 0.1f;
+    const float step = 0.05f;
     vec3 origin;
     glm_vec3_copy(p->cam->cameraPos, origin);
     vec3 direction;
@@ -53,7 +54,7 @@ int raycast_break(player * p, chunk ** final_chunk){
 
 // Return the index of the block to the side of the block hitten and fill the final chunk with the chunk the block is part of. Also update the direction to the side hit (from the block pov).
 int raycast_adjacent(player * p, chunk ** fianl_chunk, direction *d){
-    const float step = 0.1f;
+    const float step = 0.05f;
     vec3 origin;
     glm_vec3_copy(p->cam->cameraPos, origin);
     vec3 direction;
@@ -95,7 +96,7 @@ int raycast_adjacent(player * p, chunk ** fianl_chunk, direction *d){
             if (previous_block_index == block_hit_index){
                 return -1;
             }
-            *d = chunk_direction_between(block_hit_index, previous_block_index);
+            *d = direction_between(block_hit_index, previous_block_index);
 
             if (previous_chunk_crossed){ // it just works
                 *fianl_chunk = world_get_chunk_direction(p->world, current_chunk, *d);

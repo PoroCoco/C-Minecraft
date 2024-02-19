@@ -117,69 +117,7 @@ int chunk_block_x(int block_index){
     return (block_index % CHUNK_LAYER_SIZE) % CHUNK_X_SIZE;
 }
 
-int direction_step_value(direction d){
-    switch (d)
-    {
-    case TOP:
-        return CHUNK_LAYER_SIZE;
-    case BOTTOM:
-        return - CHUNK_LAYER_SIZE;
-    case NORTH:
-        return - CHUNK_X_SIZE;
-    case SOUTH:
-        return CHUNK_X_SIZE;
-    case WEST:
-        return - 1;
-    case EAST:
-        return 1;
-    default:
-        fprintf(stderr, "Wrong direction given to add to index\n");
-        return false;
-    }
-}
-
-direction direction_reverse(direction d){
-    switch (d)
-    {
-    case TOP:
-        return BOTTOM;
-    case BOTTOM:
-        return TOP;
-    case NORTH:
-        return SOUTH;
-    case SOUTH:
-        return NORTH;
-    case WEST:
-        return WEST;
-    case EAST:
-        return EAST;
-    default:
-        fprintf(stderr, "Wrong direction given to reverse\n");
-        return DIR_START;
-    }
-}
-
-direction chunk_direction_between(int block_start, int block_end){
-    int difference = block_start - block_end;
-    if (difference == 1){
-        return WEST;
-    }else if (difference == -1){
-        return EAST;
-    }else if (difference == CHUNK_X_SIZE){
-        return NORTH;
-    }else if (difference == -CHUNK_X_SIZE){
-        return SOUTH;
-    }else if (difference == CHUNK_LAYER_SIZE){
-        return BOTTOM;
-    }else if (difference == -CHUNK_LAYER_SIZE){
-        return TOP;
-    }else {
-        fprintf(stderr, "The blocks given are not adjacent ! %d and %d\n", block_start, block_end);
-        return DIR_START;
-    }
-}
-
-bool is_solid_direction(chunk const * c, int block_index, direction d){
+bool chunk_is_solid_direction(chunk const * c, int block_index, direction d){
     if (block_index < 0 || block_index > CHUNK_SIZE){
         fprintf(stderr, "invalid block_index given : %d\n", block_index);
         return false;
@@ -190,26 +128,28 @@ bool is_solid_direction(chunk const * c, int block_index, direction d){
     {
     case TOP:
         if (block_index > CHUNK_SIZE - CHUNK_LAYER_SIZE) return false; // Is on the top layer
-        return c->blocks[block_index + direction_step_value(d)].is_solid;
+        break;
     case BOTTOM:
         if ( block_index < CHUNK_LAYER_SIZE) return false; // Is on the bottom layer
-        return c->blocks[block_index + direction_step_value(d)].is_solid;
+        break;
     case NORTH:
         if (block_z == 0) return false; //Is on the northen side;
-        return c->blocks[block_index + direction_step_value(d)].is_solid;
+        break;
     case SOUTH:
         if (block_z == (CHUNK_Z_SIZE-1)) return false; //Is on the south side;
-        return c->blocks[block_index + direction_step_value(d)].is_solid;
+        break;
     case WEST:
         if (block_x == 0) return false; //Is on the west side;
-        return c->blocks[block_index + direction_step_value(d)].is_solid;
+        break;
     case EAST:
         if (block_x == (CHUNK_X_SIZE-1)) return false; //Is on the east side;
-        return c->blocks[block_index + direction_step_value(d)].is_solid;
+        break;
     default:
         fprintf(stderr, "Wrong direction for solid test\n");
         return false;
     }
+
+    return c->blocks[block_index + direction_step_value(d)].is_solid;
 }
 
 chunk * chunk_init(int x, int z){
@@ -257,7 +197,7 @@ void chunk_generate_vertices(chunk * c){
     for (int block_index = 0; block_index < CHUNK_SIZE; block_index++){
         if (c->blocks[block_index].is_solid){
             for (direction d = DIR_START; d < DIR_COUNT; d++){
-                if (!is_solid_direction(c, block_index, d)){
+                if (!chunk_is_solid_direction(c, block_index, d)){
                     add_face(c->vertices, d, face_count);
                     // Shift the face coordinates
                     for(int i = 0; i < FACE_FLOAT_COUNT; i++){

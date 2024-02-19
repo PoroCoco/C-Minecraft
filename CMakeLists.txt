@@ -12,7 +12,7 @@ include_directories(src/)
 
 
 
-add_executable(main src/main.c src/glad.c src/window.c src/shader.c src/camera.c src/block.c src/chunk.c src/world.c src/player.c)
+add_executable(main src/main.c src/glad.c src/window.c src/shader.c src/camera.c src/block.c src/chunk.c src/world.c src/player.c src/direction.c)
 
 if( WIN32 )
     link_directories(${LIB_FOLDER}/glfw-3.3.9.bin.WIN64/lib-vc2022)

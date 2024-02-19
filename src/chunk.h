@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include <block.h>
+#include <direction.h>
 
 #define CHUNK_X_SIZE 16
 #define CHUNK_Z_SIZE 16
@@ -11,16 +12,6 @@
 #define CHUNK_SIZE (CHUNK_LAYER_SIZE * CHUNK_Y_SIZE)
 
 
-typedef enum direction {
-    DIR_START = 0,
-    TOP = 0,
-    BOTTOM,
-    NORTH,
-    SOUTH,
-    EAST,
-    WEST,
-    DIR_COUNT
-} direction;
 
 typedef struct chunk {
     int x; 
@@ -42,9 +33,5 @@ int chunk_pos_to_index(vec3 pos);
 float chunk_norm_pos_x(chunk *c, float x);
 float chunk_norm_pos_z(chunk *c, float z);
 bool chunk_is_pos_inside_block(chunk const * c, vec3 pos);
-int direction_step_value(direction d);
-
-direction direction_reverse(direction d);
-direction chunk_direction_between(int block_start, int block_end);
 
 void chunk_cleanup(chunk * c);
