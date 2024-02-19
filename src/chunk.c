@@ -117,6 +117,68 @@ int chunk_block_x(int block_index){
     return (block_index % CHUNK_LAYER_SIZE) % CHUNK_X_SIZE;
 }
 
+int direction_step_value(direction d){
+    switch (d)
+    {
+    case TOP:
+        return CHUNK_LAYER_SIZE;
+    case BOTTOM:
+        return - CHUNK_LAYER_SIZE;
+    case NORTH:
+        return - CHUNK_X_SIZE;
+    case SOUTH:
+        return CHUNK_X_SIZE;
+    case WEST:
+        return - 1;
+    case EAST:
+        return 1;
+    default:
+        fprintf(stderr, "Wrong direction given to add to index\n");
+        return false;
+    }
+}
+
+direction direction_reverse(direction d){
+    switch (d)
+    {
+    case TOP:
+        return BOTTOM;
+    case BOTTOM:
+        return TOP;
+    case NORTH:
+        return SOUTH;
+    case SOUTH:
+        return NORTH;
+    case WEST:
+        return WEST;
+    case EAST:
+        return EAST;
+    default:
+        fprintf(stderr, "Wrong direction given to reverse\n");
+        return DIR_START;
+    }
+}
+
+direction chunk_direction_between(int block_start, int block_end){
+    int difference = block_start - block_end;
+    if (difference == 1){
+        return WEST;
+    }else if (difference == -1){
+        return EAST;
+    }else if (difference == CHUNK_X_SIZE){
+        return NORTH;
+    }else if (difference == -CHUNK_X_SIZE){
+        return SOUTH;
+    }else if (difference == CHUNK_LAYER_SIZE){
+        return BOTTOM;
+    }else if (difference == -CHUNK_LAYER_SIZE){
+        return TOP;
+    }else {
+        fprintf(stderr, "The blocks given are not adjacent ! %d and %d\n", block_start, block_end);
+        return DIR_START;
+    }
+}
+
 bool is_solid_direction(chunk const * c, int block_index, direction d){
     if (block_index < 0 || block_index > CHUNK_SIZE){
         fprintf(stderr, "invalid block_index given : %d\n", block_index);
@@ -128,22 +190,22 @@ bool is_solid_direction(chunk const * c, int block_index, direction d){
     {
     case TOP:
         if (block_index > CHUNK_SIZE - CHUNK_LAYER_SIZE) return false; // Is on the top layer
-        return c->blocks[block_index + CHUNK_LAYER_SIZE].is_solid;
+        return c->blocks[block_index + direction_step_value(d)].is_solid;
     case BOTTOM:
-        if (block_index < CHUNK_LAYER_SIZE) return false; // Is on the bottom layer
-        return c->blocks[block_index - CHUNK_LAYER_SIZE].is_solid;
+        if ( block_index < CHUNK_LAYER_SIZE) return false; // Is on the bottom layer
+        return c->blocks[block_index + direction_step_value(d)].is_solid;
     case NORTH:
         if (block_z == 0) return false; //Is on the northen side;
-        return c->blocks[block_index - CHUNK_X_SIZE].is_solid;
+        return c->blocks[block_index + direction_step_value(d)].is_solid;
     case SOUTH:
         if (block_z == (CHUNK_Z_SIZE-1)) return false; //Is on the south side;
-        return c->blocks[block_index + CHUNK_X_SIZE].is_solid;
+        return c->blocks[block_index + direction_step_value(d)].is_solid;
     case WEST:
         if (block_x == 0) return false; //Is on the west side;
-        return c->blocks[block_index - 1].is_solid;
+        return c->blocks[block_index + direction_step_value(d)].is_solid;
     case EAST:
         if (block_x == (CHUNK_X_SIZE-1)) return false; //Is on the east side;
-        return c->blocks[block_index + 1].is_solid;
+        return c->blocks[block_index + direction_step_value(d)].is_solid;
     default:
         fprintf(stderr, "Wrong direction for solid test\n");
         return false;
@@ -178,7 +240,6 @@ chunk * chunk_init(int x, int z){
 
 float * chunk_get_vertices(chunk * c, int *vertex_count){
     if (c->vertices_dirty){
-        printf("regen vertices\n");
         chunk_generate_vertices(c);
         c->vertices_dirty = false;
     }
@@ -221,11 +282,11 @@ void chunk_generate_vertices(chunk * c){
 }
 
 void chunk_add_block(chunk * c, block b, int index){
-    printf("Adding block id %d to chunk %d,%d, at pos x,z,y %d,%d,%d\n", b.id, c->x, c->z, chunk_block_x(index), chunk_block_z(index), chunk_block_y(index));
     if (index < 0 || index > CHUNK_SIZE){
         fprintf(stderr, "Tried to add a block at an invalid index inside a chunk !\n");
         return;
     }
+    printf("Adding block id %d to chunk %d,%d, at pos x,z,y %d,%d,%d\n", b.id, c->x, c->z, chunk_block_x(index), chunk_block_z(index), chunk_block_y(index));
 
     if (c->blocks[index].id != 0){
         fprintf(stderr, "Tried to replace an existing block inside a chunk ! Was this expected ?\n");
