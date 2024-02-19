@@ -41,7 +41,8 @@ int main(int argc, char const *argv[])
     srand(654);
     world * w = world_init();
     camera * cam = camera_init();
-    GLFWwindow* window = window_init(WIDTH, HEIGHT, cam);
+    player * player = player_init(cam, w);
+    GLFWwindow* window = window_init(WIDTH, HEIGHT, cam, player);
 
     // GLAD init
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))

@@ -29,6 +29,12 @@ void window_mouse_callback(GLFWwindow* window, double x_pos, double y_pos){
     camera_mouse_callback(w->cam, x_offset, y_offset);
 }
 
+void window_mouse_button_callback(GLFWwindow* window, int button, int action, int mods){
+    window_data * w = glfwGetWindowUserPointer(window);
+
+    player_mouse_button_callback(w->player, button, action, mods);
+}
+
 void window_process_input(GLFWwindow *window, float delta_time)
 {
     window_data * w = glfwGetWindowUserPointer(window);
@@ -39,7 +45,7 @@ void window_process_input(GLFWwindow *window, float delta_time)
     camera_process_input(w->cam, window, delta_time);
 }
 
-GLFWwindow* window_init(int width, int height, camera * c){
+GLFWwindow* window_init(int width, int height, camera * c, player * player){
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -58,10 +64,12 @@ GLFWwindow* window_init(int width, int height, camera * c){
     assert(w_data);
     w_data->cam = c;
     w_data->mouse_first = true;
+    w_data->player = player;
     glfwSetWindowUserPointer(window, w_data);
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, window_mouse_callback);
+    glfwSetMouseButtonCallback(window, window_mouse_button_callback);
 
     return window;
 }
