@@ -164,29 +164,44 @@ chunk * chunk_init(int x, int z){
         }
     }
 
+    c->vertices = NULL;
+    c->vertices_count = 0;
+    c->vertices_dirty = true;
+
     return c;
 }
 
-float * chunk_generate_vertices(chunk const * c, int *vertex_count){
+
+float * chunk_get_vertices(chunk * c, int *vertex_count){
+    if (c->vertices_dirty){
+        chunk_generate_vertices(c);
+        c->vertices_dirty = false;
+    }
+    *vertex_count = c->vertices_count;
+    return c->vertices;
+}
+
+
+void chunk_generate_vertices(chunk * c){
     // Allocating the maximum possible vertices size. Doesn't actually allocate too much thanks to virtual memory as we'll not write on much of it  
-    float * vertices_data = malloc(FACE_BYTES * 6 * CHUNK_SIZE); // Multiply by 6 as a cube have 6 faces
-    assert(vertices_data);
+    c->vertices = realloc(c->vertices, FACE_BYTES * 6 * CHUNK_SIZE); // Multiply by 6 as a cube have 6 faces
+    assert(c->vertices);
 
     int face_count = 0;
     for (int block_index = 0; block_index < CHUNK_SIZE; block_index++){
         if (c->blocks[block_index].is_solid){
             for (direction d = DIR_START; d < DIR_COUNT; d++){
                 if (!is_solid_direction(c, block_index, d)){
-                    add_face(vertices_data, d, face_count);
+                    add_face(c->vertices, d, face_count);
                     // Shift the face coordinates
                     for(int i = 0; i < FACE_FLOAT_COUNT; i++){
                         if (i%ATTRIBUTE_PER_VERTEX > 2 ) continue; // Skip texture coord attribute 
                         if (i%ATTRIBUTE_PER_VERTEX == 0){ // x
-                            vertices_data[face_count * FACE_FLOAT_COUNT + i] += chunk_block_x(block_index);
+                            c->vertices[face_count * FACE_FLOAT_COUNT + i] += chunk_block_x(block_index);
                         }else if (i%ATTRIBUTE_PER_VERTEX == 1){ // y
-                            vertices_data[face_count * FACE_FLOAT_COUNT + i] += chunk_block_y(block_index);
+                            c->vertices[face_count * FACE_FLOAT_COUNT + i] += chunk_block_y(block_index);
                         }else{ // z
-                            vertices_data[face_count * FACE_FLOAT_COUNT + i] += chunk_block_z(block_index);
+                            c->vertices[face_count * FACE_FLOAT_COUNT + i] += chunk_block_z(block_index);
                         }
                     }
                     face_count++;
@@ -195,12 +210,12 @@ float * chunk_generate_vertices(chunk const * c, int *vertex_count){
         }
     }
     // Now that we know the actual size we can resize it
-    vertices_data = realloc(vertices_data, face_count * FACE_BYTES);
-    assert(vertices_data);
-    *vertex_count = face_count * VERTEX_PER_FACE; 
-    return vertices_data;
+    c->vertices = realloc(c->vertices, face_count * FACE_BYTES);
+    assert(c->vertices);
+    c->vertices_count = face_count * VERTEX_PER_FACE; 
 }
 
 void chunk_cleanup(chunk * c){
+    free(c->vertices);
     free(c);
 }

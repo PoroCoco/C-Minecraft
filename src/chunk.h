@@ -26,10 +26,14 @@ typedef struct chunk {
     int x; 
     int z;
     block blocks[CHUNK_SIZE];
+    float *vertices;
+    unsigned int vertices_count;
+    bool vertices_dirty;
 } chunk;
 
 chunk * chunk_init(int x, int y);
 
-float * chunk_generate_vertices(chunk const * c, int *vertex_count);
+float * chunk_get_vertices(chunk * c, int *vertex_count);
+void chunk_generate_vertices(chunk * c);
 
 void chunk_cleanup(chunk * c);
