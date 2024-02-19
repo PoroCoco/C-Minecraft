@@ -24,12 +24,12 @@ typedef enum direction {
 
 typedef struct chunk {
     int x; 
-    int y;
+    int z;
     block blocks[CHUNK_SIZE];
 } chunk;
 
 chunk * chunk_init(int x, int y);
 
-float * chunk_generate_vertices(chunk * c, int *vertex_count);
+float * chunk_generate_vertices(chunk const * c, int *vertex_count);
 
 void chunk_cleanup(chunk * c);

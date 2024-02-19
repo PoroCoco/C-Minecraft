@@ -113,7 +113,7 @@ int chunk_block_x(int block_index){
     return (block_index % CHUNK_LAYER_SIZE) % CHUNK_X_SIZE;
 }
 
-bool is_solid_direction(chunk * c, int block_index, direction d){
+bool is_solid_direction(chunk const * c, int block_index, direction d){
     if (block_index < 0 || block_index > CHUNK_SIZE){
         fprintf(stderr, "invalid block_index given : %d\n", block_index);
         return false;
@@ -146,11 +146,11 @@ bool is_solid_direction(chunk * c, int block_index, direction d){
     }
 }
 
-chunk * chunk_init(int x, int y){
+chunk * chunk_init(int x, int z){
     chunk * c = malloc(sizeof(*c));
     assert(c);
     c->x = x;
-    c->y = y;
+    c->z = z;
 
     for (size_t i = 0; i < CHUNK_SIZE; i++){
         c->blocks[i] = block_create(0);
@@ -167,7 +167,7 @@ chunk * chunk_init(int x, int y){
     return c;
 }
 
-float * chunk_generate_vertices(chunk * c, int *vertex_count){
+float * chunk_generate_vertices(chunk const * c, int *vertex_count){
     // Allocating the maximum possible vertices size. Doesn't actually allocate too much thanks to virtual memory as we'll not write on much of it  
     float * vertices_data = malloc(FACE_BYTES * 6 * CHUNK_SIZE); // Multiply by 6 as a cube have 6 faces
     assert(vertices_data);
