@@ -13,13 +13,14 @@
 #include <block.h>
 #include <chunk.h>
 #include <world.h>
+#include <atlas.h>
 
 
-#define WIDTH 1600
+#define WIDTH 2300
 #define HEIGHT 1200
 
 
-void regen_world_vertices(world *w, unsigned int *VBO, unsigned int *VAO, int *vertices_count){
+void regen_world_vertices(world *w, unsigned int *VBO, unsigned int *VAO, int *vertices_count, atlas * atlas){
     glDeleteVertexArrays(TOTAL_CHUNKS, VAO);
     glDeleteBuffers(TOTAL_CHUNKS, VBO);
     glGenVertexArrays(TOTAL_CHUNKS, VAO);
@@ -27,7 +28,7 @@ void regen_world_vertices(world *w, unsigned int *VBO, unsigned int *VAO, int *v
     for (int i = 0; i < TOTAL_CHUNKS; i++){
         glBindVertexArray(VAO[i]);
         glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
-        float * chunk_vertices = chunk_get_vertices(w->loaded_chunks[i], &vertices_count[i]);
+        float * chunk_vertices = chunk_get_vertices(w->loaded_chunks[i], &vertices_count[i], atlas);
         glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices_count[i] * 5, chunk_vertices, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
@@ -42,6 +43,7 @@ int main(int argc, char const *argv[])
     world * w = world_init();
     camera * cam = camera_init();
     player * player = player_init(cam, w);
+    atlas * atlas = atlas_init(256);
     GLFWwindow* window = window_init(WIDTH, HEIGHT, cam, player);
 
     // GLAD init
@@ -75,7 +77,7 @@ int main(int argc, char const *argv[])
     for (int i = 0; i < TOTAL_CHUNKS; i++){
         glBindVertexArray(VAO[i]);
         glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
-        float * chunk_vertices = chunk_get_vertices(w->loaded_chunks[i], &vertices_count[i]);
+        float * chunk_vertices = chunk_get_vertices(w->loaded_chunks[i], &vertices_count[i], atlas);
         glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices_count[i] * 5, chunk_vertices, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
@@ -110,12 +112,14 @@ int main(int argc, char const *argv[])
     glGenTextures(1, &texture1);
     glBindTexture(GL_TEXTURE_2D, texture1); 
     // Setting up texture filtering (when object is bigger/smaller than texture which pixel do we take from the texture image)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     int width, height, nrChannels;
-    const char * texture1_path ="../textures/container.jpg";
+    const char * texture1_path ="../textures/atlas.png";
     unsigned char *data = stbi_load(texture1_path, &width, &height, &nrChannels, 0);
     if (data){
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -130,7 +134,7 @@ int main(int argc, char const *argv[])
     glBindTexture(GL_TEXTURE_2D, texture2); 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     const char * texture2_path = "../textures/awesomeface.png";
     data = stbi_load(texture2_path, &width, &height, &nrChannels, 0);
@@ -146,23 +150,7 @@ int main(int argc, char const *argv[])
     shader_set_int(s, "texture1", 0);
     shader_set_int(s, "texture2", 1);
 
-
-
     glEnable(GL_DEPTH_TEST);
-
-    // Camera 
-    // vec3 cameraPos = {0.0f, 0.0f, 3.0f};
-    // vec3 cameraTarget = {0.0f, 0.0f, 0.0f}; // The center of the world
-    // vec3 cameraDirection = glm_vec3_norm(cameraPos - cameraTarget); // Vector substraction yields the vector between the two. Careful, the direction is actually from the origin to the camera
-    // vec3 up = {0.0f, 1.0f, 0.0f}; 
-    // vec3 cameraRight;
-    // glm_vec3_cross(up, cameraDirection, cameraRight);
-    // glm_vec3_norm(cameraRight);
-    // vec3 cameraUp;
-    // glm_vec3_cross(cameraDirection, cameraRight, cameraUp);
-    // is equivalent to 
-    // mat4 view;
-    // glm_lookat((vec3){0.0f, 0.0f, 3.0f}, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f}, view);
 
     // Render loop
     unsigned int frame_count = 0;
@@ -170,6 +158,7 @@ int main(int argc, char const *argv[])
     float delta_time = 0.0f;
     while(!window_should_close(window))
     {
+        float time_frame_begin = (float)glfwGetTime();
         float current_frame_time = (float)glfwGetTime();
         delta_time = current_frame_time - last_frame_time;
         last_frame_time = current_frame_time;
@@ -177,7 +166,8 @@ int main(int argc, char const *argv[])
 
         // Update logic
         world_update_position(w, cam->cameraPos[0], cam->cameraPos[2]);
-        regen_world_vertices(w, VBO, VAO, vertices_count);
+        regen_world_vertices(w, VBO, VAO, vertices_count, atlas);
+        float time_update = (float)glfwGetTime() - time_frame_begin;
         
 
 
@@ -210,6 +200,7 @@ int main(int argc, char const *argv[])
         
         // Wireframe
         // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
+        float tmp_draw = (float)glfwGetTime();
         for (int i = 0 ; i < TOTAL_CHUNKS ; i++){
             glBindVertexArray(VAO[i]);
             glActiveTexture(GL_TEXTURE0);
@@ -222,6 +213,7 @@ int main(int argc, char const *argv[])
             shader_set_m4(s, "model", model);
             glDrawArrays(GL_TRIANGLES, 0, vertices_count[i]);
         }
+        float time_draw = (float)glfwGetTime() - tmp_draw;
         
         // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
@@ -231,6 +223,7 @@ int main(int argc, char const *argv[])
         glfwPollEvents();
 
         frame_count++;
+        printf("Frame time : %f (update : %f, draw %f)\n", delta_time, time_update, time_draw);
     }
 
     glDeleteVertexArrays(TOTAL_CHUNKS, VAO);
@@ -238,6 +231,7 @@ int main(int argc, char const *argv[])
     // glDeleteBuffers(1, &EBO);
     shader_cleanup(s);
     camera_cleanup(cam);
+    atlas_cleanup(atlas);
 
     window_cleanup(window);
     return 0;

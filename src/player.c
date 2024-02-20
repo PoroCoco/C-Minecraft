@@ -156,7 +156,7 @@ void player_mouse_button_callback(player *p, int button, int action, int mods){
         player_break_block(p);
     }
     if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS){
-        player_place_block(p, block_create(1));
+        player_place_block(p, block_create(BLOCK_DIRT));
     }
 }
 

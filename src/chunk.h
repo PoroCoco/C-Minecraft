@@ -4,13 +4,13 @@
 
 #include <block.h>
 #include <direction.h>
+#include <atlas.h>
 
 #define CHUNK_X_SIZE 16
 #define CHUNK_Z_SIZE 16
 #define CHUNK_Y_SIZE 128
 #define CHUNK_LAYER_SIZE (CHUNK_X_SIZE * CHUNK_Z_SIZE)
 #define CHUNK_SIZE (CHUNK_LAYER_SIZE * CHUNK_Y_SIZE)
-
 
 
 typedef struct chunk {
@@ -24,8 +24,8 @@ typedef struct chunk {
 
 chunk * chunk_init(int x, int y);
 
-float * chunk_get_vertices(chunk * c, int *vertex_count);
-void chunk_generate_vertices(chunk * c);
+float * chunk_get_vertices(chunk * c, int *vertex_count, atlas * a);
+void chunk_generate_vertices(chunk * c, atlas * a);
 void chunk_add_block(chunk * c, block b, int index);
 void chunk_remove_block(chunk * c, int index);
 

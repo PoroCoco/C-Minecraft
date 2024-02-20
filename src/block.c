@@ -4,7 +4,7 @@
 
 block block_create(int id){
     block b = {.id = id, .is_solid = true};
-    if (id == 0){
+    if (id == -1){
         b.is_solid = false;
     }
     

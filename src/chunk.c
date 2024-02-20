@@ -7,6 +7,7 @@
 #include <cglm/cglm.h> 
 
 #include <chunk.h>
+#include <atlas.h>
 
 // x,y,z , textCoordX,textCoordY
 #define ATTRIBUTE_PER_VERTEX 5 
@@ -37,21 +38,21 @@ static const float vertices_face_south[] = {
 
 
 static const float vertices_face_west[] = {
+    0.f, 0.f, 0.f,  0.0f, 1.0f,
+    0.f, 0.f,  1.f,  0.0f, 0.0f,
+    0.f,  1.f,  1.f,  1.0f, 0.0f,
     0.f,  1.f,  1.f,  1.0f, 0.0f,
     0.f,  1.f, 0.f,  1.0f, 1.0f,
     0.f, 0.f, 0.f,  0.0f, 1.0f,
-    0.f, 0.f, 0.f,  0.0f, 1.0f,
-    0.f, 0.f,  1.f,  0.0f, 0.0f,
-    0.f,  1.f,  1.f,  1.0f, 0.0f
 };
 
 static const float vertices_face_east[] = {
+    1.f, 0.f, 0.f,  0.0f, 1.0f,
+    1.f, 0.f,  1.f,  0.0f, 0.0f,
+    1.f,  1.f,  1.f,  1.0f, 0.0f,
     1.f,  1.f,  1.f,  1.0f, 0.0f,
     1.f,  1.f, 0.f,  1.0f, 1.0f,
     1.f, 0.f, 0.f,  0.0f, 1.0f,
-    1.f, 0.f, 0.f,  0.0f, 1.0f,
-    1.f, 0.f,  1.f,  0.0f, 0.0f,
-    1.f,  1.f,  1.f,  1.0f, 0.0f
 };
 
 static const float vertices_face_top[] = {
@@ -159,13 +160,19 @@ chunk * chunk_init(int x, int z){
     c->z = z;
 
     for (size_t i = 0; i < CHUNK_SIZE; i++){
-        c->blocks[i] = block_create(0);
+        c->blocks[i] = block_create(BLOCK_AIR);
     }
 
-    for (size_t level = 10+x+z; level < 14+x+z; level++){
+    for (size_t level = 0; level < 64; level++){
         for (size_t z = 0; z < CHUNK_Z_SIZE; z++){
             for (size_t x = 0; x < CHUNK_X_SIZE; x++){
-                c->blocks[(level * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = block_create(1);
+                block b;
+                if (level < 60){
+                    b = block_create(BLOCK_STONE);
+                }else{
+                    b = block_create(BLOCK_DIRT);
+                }
+                c->blocks[(level * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = b;
             }
         }
     }
@@ -178,9 +185,9 @@ chunk * chunk_init(int x, int z){
 }
 
 
-float * chunk_get_vertices(chunk * c, int *vertex_count){
+float * chunk_get_vertices(chunk * c, int *vertex_count, atlas * a){
     if (c->vertices_dirty){
-        chunk_generate_vertices(c);
+        chunk_generate_vertices(c, a);
         c->vertices_dirty = false;
     }
     *vertex_count = c->vertices_count;
@@ -188,7 +195,44 @@ float * chunk_get_vertices(chunk * c, int *vertex_count){
 }
 
 
-void chunk_generate_vertices(chunk * c){
+float texture_coord_for_vertex_x(float x_start, float x_end, int current_vertex){
+    if (current_vertex == 0){
+        return x_start;
+    }else if (current_vertex == 1){
+        return x_end;
+    }else if (current_vertex == 2){
+        return x_end;
+    }else if (current_vertex == 3){
+        return x_end;
+    }else if (current_vertex == 4){
+        return x_start;
+    }else if (current_vertex == 5){
+        return x_start;
+    }
+    fprintf(stderr, "???\n");
+    return 0.f;
+}
+
+float texture_coord_for_vertex_y(float y_start, float y_end, int current_vertex){
+    if (current_vertex == 0){
+        return y_start;
+    }else if (current_vertex == 1){
+        return y_start;
+    }else if (current_vertex == 2){
+        return y_end;
+    }else if (current_vertex == 3){
+        return y_end;
+    }else if (current_vertex == 4){
+        return y_end;
+    }else if (current_vertex == 5){
+        return y_start;
+    }
+    fprintf(stderr, "???\n");
+    return 0.f;
+}
+
+
+void chunk_generate_vertices(chunk * c, atlas * a){
     // Allocating the maximum possible vertices size. Doesn't actually allocate too much thanks to virtual memory as we'll not write on much of it  
     c->vertices = realloc(c->vertices, FACE_BYTES * 6 * CHUNK_SIZE); // Multiply by 6 as a cube have 6 faces
     assert(c->vertices);
@@ -199,16 +243,22 @@ void chunk_generate_vertices(chunk * c){
             for (direction d = DIR_START; d < DIR_COUNT; d++){
                 if (!chunk_is_solid_direction(c, block_index, d)){
                     add_face(c->vertices, d, face_count);
-                    // Shift the face coordinates
+                    // Shift the face coordinates and register texture
+                    vec2 texture_start;
+                    vec2 texture_end;
+                    atlas_get_coord(a, c->blocks[block_index].id, texture_start, texture_end, d);
                     for(int i = 0; i < FACE_FLOAT_COUNT; i++){
-                        if (i%ATTRIBUTE_PER_VERTEX > 2 ) continue; // Skip texture coord attribute 
                         if (i%ATTRIBUTE_PER_VERTEX == 0){ // x
                             c->vertices[face_count * FACE_FLOAT_COUNT + i] += chunk_block_x(block_index);
                         }else if (i%ATTRIBUTE_PER_VERTEX == 1){ // y
                             c->vertices[face_count * FACE_FLOAT_COUNT + i] += chunk_block_y(block_index);
-                        }else{ // z
+                        }else if (i%ATTRIBUTE_PER_VERTEX == 2){ // z
                             c->vertices[face_count * FACE_FLOAT_COUNT + i] += chunk_block_z(block_index);
-                        }
+                        }else if (i%ATTRIBUTE_PER_VERTEX == 3){ // texture X
+                            c->vertices[face_count * FACE_FLOAT_COUNT + i] = texture_coord_for_vertex_x(texture_start[0], texture_end[0], i/ATTRIBUTE_PER_VERTEX);
+                        }else if (i%ATTRIBUTE_PER_VERTEX == 4){ // texture Y
+                            c->vertices[face_count * FACE_FLOAT_COUNT + i] = texture_coord_for_vertex_y(texture_start[1], texture_end[1], i/ATTRIBUTE_PER_VERTEX);
+                        }   
                     }
                     face_count++;
                 }
@@ -228,7 +278,7 @@ void chunk_add_block(chunk * c, block b, int index){
     }
     printf("Adding block id %d to chunk %d,%d, at pos x,z,y %d,%d,%d\n", b.id, c->x, c->z, chunk_block_x(index), chunk_block_z(index), chunk_block_y(index));
 
-    if (c->blocks[index].id != 0){
+    if (c->blocks[index].id != BLOCK_AIR){
         fprintf(stderr, "Tried to replace an existing block inside a chunk ! Was this expected ?\n");
     }
 
@@ -242,7 +292,7 @@ void chunk_remove_block(chunk * c, int index){
         return;
     }
 
-    c->blocks[index] = block_create(0);
+    c->blocks[index] = block_create(BLOCK_AIR);
     c->vertices_dirty = true; // Brute force solution, need to make a smarter update 
 }
 
