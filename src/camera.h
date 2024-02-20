@@ -3,7 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h> 
 
-#define CAM_SPEED 5.0f
+#define CAM_SPEED 30.0f
 
 typedef struct camera{
     vec3 cameraPos;

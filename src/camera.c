@@ -5,6 +5,7 @@
 #include <glad/glad.h> 
 
 #include <camera.h>
+#include <chunk.h>
 
 void camera_mouse_callback(camera * c, double x_offset, double y_offset){
     c->yaw += (float)x_offset;
@@ -37,8 +38,8 @@ camera * camera_init(){
     c->cameraFront[1] = sinf(glm_rad(c->pitch));
     c->cameraFront[2] = sinf(glm_rad(c->yaw)) * cosf(glm_rad(c->pitch));
 
-    vec3 cameraPos = {0.0f, 0.0f,  3.0f};
-    vec3 cameraUp = {0.0f, 1.0f,  0.0f};
+    vec3 cameraPos = {0.0f, 67.0f, 0.0f};
+    vec3 cameraUp = {0.0f, 1.0f, 0.0f};
     glm_vec3_copy(cameraPos, c->cameraPos);
     glm_vec3_copy(cameraUp, c->cameraUp);
 
@@ -79,6 +80,7 @@ void camera_process_input(camera * c, GLFWwindow * window, float delta_time){
     if (moved){
         glm_vec3_add(c->cameraPos, c->cameraFront, tmp);
         glm_lookat(c->cameraPos, tmp, c->cameraUp, c->view);
+        // if (rand()%10 == 0) printf("Position x,z : %.2f,%.2f\n Block %lf,%lf\n", c->cameraPos[0], c->cameraPos[2], chunk_norm_pos_x(NULL,c->cameraPos[0]), chunk_norm_pos_x(NULL,c->cameraPos[2]));
     }
 }
 
