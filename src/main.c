@@ -28,9 +28,9 @@
     } \
 } while(0)
 
-void regen_world_vertices(world *w, unsigned int *VAO, unsigned int *EBO, unsigned int *elements_count, atlas * atlas){
+void regen_world_vertices(world *w, unsigned int VAO, unsigned int *EBO, unsigned int *elements_count, atlas * atlas){
     for (int i = 0; i < TOTAL_CHUNKS; i++){
-        DEBUG_GL(glBindVertexArray(VAO[i]));
+        DEBUG_GL(glBindVertexArray(VAO));
         DEBUG_GL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[i]));
         DEBUG_GL(glDeleteBuffers(1, &EBO[i]));
         DEBUG_GL(glGenBuffers(1, &EBO[i]));
@@ -59,8 +59,8 @@ int main(int argc, char const *argv[])
     shader *s = shader_init("../shaders/shader.vert", "../shaders/shader.frag");
     
     // Create the VAOs
-    unsigned int VAO[TOTAL_CHUNKS];
-    DEBUG_GL(glGenVertexArrays(TOTAL_CHUNKS, VAO));
+    unsigned int VAO;
+    DEBUG_GL(glGenVertexArrays(1, &VAO));
 
     // Create the unique VBO and fill it
     unsigned int VBO;
@@ -74,7 +74,7 @@ int main(int argc, char const *argv[])
 
     // Bind the same VBO for each
     for (size_t i = 0; i < TOTAL_CHUNKS; i++){
-        DEBUG_GL(glBindVertexArray(VAO[i]));
+        DEBUG_GL(glBindVertexArray(VAO));
         DEBUG_GL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, ATTRIBUTE_PER_VERTEX * sizeof(float), (void*)0));
         DEBUG_GL(glEnableVertexAttribArray(0));
         DEBUG_GL(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, ATTRIBUTE_PER_VERTEX * sizeof(float), (void*)(3 * sizeof(float))));
@@ -233,7 +233,7 @@ int main(int argc, char const *argv[])
         // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
         float tmp_draw = (float)glfwGetTime();
         for (int i = 0 ; i < TOTAL_CHUNKS ; i++){
-            DEBUG_GL(glBindVertexArray(VAO[i]));
+            DEBUG_GL(glBindVertexArray(VAO));
             DEBUG_GL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[i]));
             mat4 model = GLM_MAT4_IDENTITY_INIT;
             vec3 translate = {(float)(w->loaded_chunks[i]->x) * CHUNK_X_SIZE, (float)0, (float)(w->loaded_chunks[i]->z)*CHUNK_Z_SIZE};
@@ -255,7 +255,7 @@ int main(int argc, char const *argv[])
         // printf("Frame time : %f (regen : %f, draw %f, world %f)\n", delta_time, time_regen, time_draw, time_world_update);
     }
 
-    DEBUG_GL(glDeleteVertexArrays(TOTAL_CHUNKS, VAO));
+    DEBUG_GL(glDeleteVertexArrays(1, &VAO));
     DEBUG_GL(glDeleteBuffers(1, &VBO));
     DEBUG_GL(glDeleteBuffers(TOTAL_CHUNKS, EBO));
     shader_cleanup(s);
