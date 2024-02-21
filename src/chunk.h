@@ -25,15 +25,13 @@ typedef struct chunk {
     int x; 
     int z;
     block blocks[CHUNK_SIZE];
-    float *vertices;
-    unsigned int vertices_count;
-    bool vertices_dirty;
+    unsigned int *elements; // The openGL element buffer data
+    unsigned int elements_count;
+    bool elements_dirty;
 } chunk;
 
 chunk * chunk_init(int x, int y);
 
-float * chunk_get_vertices(chunk * c, int *vertex_count, atlas * a);
-void chunk_generate_vertices(chunk * c, atlas * a);
 void chunk_add_block(chunk * c, block b, int index);
 void chunk_remove_block(chunk * c, int index);
 
@@ -41,5 +39,9 @@ int chunk_pos_to_index(vec3 pos);
 float chunk_norm_pos_x(chunk *c, float x);
 float chunk_norm_pos_z(chunk *c, float z);
 bool chunk_is_pos_inside_block(chunk const * c, vec3 pos);
+
+float * chunk_generate_static_mesh(atlas * a, int *vertice_count);
+unsigned int * chunk_get_elements(chunk * c, int *vertex_count, atlas * a);
+void chunk_generate_elements_buffer(chunk * c, atlas * a);
 
 void chunk_cleanup(chunk * c);

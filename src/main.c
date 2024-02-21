@@ -20,20 +20,15 @@
 #define HEIGHT 1200
 
 
-void regen_world_vertices(world *w, unsigned int *VBO, unsigned int *VAO, int *vertices_count, atlas * atlas){
+void regen_world_vertices(world *w, unsigned int *VAO, unsigned int *EBO, unsigned int *elements_count, atlas * atlas){
     for (int i = 0; i < TOTAL_CHUNKS; i++){
-        glDeleteVertexArrays(1, &VAO[i]);
-        glDeleteBuffers(1, &VBO[i]);
-        glGenVertexArrays(1, &VAO[i]);
-        glGenBuffers(1, &VBO[i]);
         glBindVertexArray(VAO[i]);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
-        float * chunk_vertices = chunk_get_vertices(w->loaded_chunks[i], &vertices_count[i], atlas);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices_count[i] * 5, chunk_vertices, GL_DYNAMIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(1); 
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[i]);
+        glDeleteBuffers(1, &EBO[i]);
+        glGenBuffers(1, &EBO[i]);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[i]);
+        unsigned int * elements = chunk_get_elements(w->loaded_chunks[i], &(elements_count[i]), atlas);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(*EBO) * elements_count[i], elements, GL_DYNAMIC_DRAW);
     }
 }
 
@@ -63,32 +58,55 @@ int main(int argc, char const *argv[])
     };
     
     // Create the VAOs
-    // Bind the same VBO for each
-    // Each chunk return its EBO from its block data
-    // Each chunk return its texturesCoord from its block data
-
-    // Setting the vertex attributes and VBO inside a VAO (Vertex Array object)
     unsigned int VAO[TOTAL_CHUNKS];
     glGenVertexArrays(TOTAL_CHUNKS, VAO);  
-    
-    // Create the Vertex Buffer Object
-    unsigned int VBO[TOTAL_CHUNKS];
-    glGenBuffers(TOTAL_CHUNKS, VBO);
 
-    // Sends the data
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    int vertices_count[TOTAL_CHUNKS];
+    // Create the unique VBO and fill it
+    unsigned int VBO;
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    int vertice_count;
+    float * chunk_static_vertices = chunk_generate_static_mesh(atlas, &vertice_count);
+    printf("count %d\n", vertice_count);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertice_count * 5, chunk_static_vertices, GL_STATIC_DRAW);
+    free(chunk_static_vertices);
 
-    for (int i = 0; i < TOTAL_CHUNKS; i++){
+    // Bind the same VBO for each
+    for (size_t i = 0; i < TOTAL_CHUNKS; i++){
         glBindVertexArray(VAO[i]);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
-        float * chunk_vertices = chunk_get_vertices(w->loaded_chunks[i], &vertices_count[i], atlas);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices_count[i] * 5, chunk_vertices, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
         glEnableVertexAttribArray(1); 
     }
+    printf("VBO binded\n");
+    
+
+    // Each chunk return its EBO from its block data
+    // Each chunk return its texturesCoord from its block data
+
+    // // Setting the vertex attributes and VBO inside a VAO (Vertex Array object)
+    // unsigned int VAO[TOTAL_CHUNKS];
+    // glGenVertexArrays(TOTAL_CHUNKS, VAO);  
+    
+    // // Create the Vertex Buffer Object
+    // unsigned int VBO[TOTAL_CHUNKS];
+    // glGenBuffers(TOTAL_CHUNKS, VBO);
+
+    // // Sends the data
+    // // glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    // int vertices_count[TOTAL_CHUNKS];
+
+    // for (int i = 0; i < TOTAL_CHUNKS; i++){
+    //     glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
+    //     float * chunk_vertices = chunk_get_vertices(w->loaded_chunks[i], &vertices_count[i], atlas);
+    //     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices_count[i] * 5, chunk_vertices, GL_STATIC_DRAW);
+    //     glBindVertexArray(VAO[i]);
+    //     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    //     glEnableVertexAttribArray(0);
+    //     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    //     glEnableVertexAttribArray(1); 
+    // }
     
     // position attribute
     // color attribute
@@ -97,18 +115,19 @@ int main(int argc, char const *argv[])
     // texture coord attribute 
 
     // Create the Element Object Buffer (the indices bufffer)
-    // unsigned int EBO;
-    // glGenBuffers(1, &EBO);
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    // // Sends the data
+    unsigned int EBO[TOTAL_CHUNKS];
+    glGenBuffers(TOTAL_CHUNKS, EBO);
+    unsigned int elements_count[TOTAL_CHUNKS];
+    // Sends the data
     // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); 
 
     // Unbinds the VBO
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    // glBindBuffer(GL_ARRAY_BUFFER, 0);
     // Do not unbind the EBO
     // -> remember: do NOT unbind the EBO while a VAO is active as the bound element buffer object IS stored in the VAO; keep the EBO bound.
     // Unbinds the VAO
-    glBindVertexArray(0);
+    // glBindVertexArray(0);
+    printf("EBO created\n");
 
 
     // Texture loading and generation
@@ -133,6 +152,7 @@ int main(int argc, char const *argv[])
         fprintf(stderr, "Failed to load a texture : %s\n", texture1_path);
     }
     stbi_image_free(data);
+    printf("textures created\n");
 
     // unsigned int texture2;
     // glGenTextures(1, &texture2);
@@ -180,13 +200,8 @@ int main(int argc, char const *argv[])
         time_world_update = (float)glfwGetTime() - tmp_world_update;
 
         float tmp_regen = (float)glfwGetTime();
-        regen_world_vertices(w, VBO, VAO, vertices_count, atlas);
+        regen_world_vertices(w, VAO, EBO, elements_count, atlas);
         time_regen = (float)glfwGetTime() - tmp_regen;
-
-
-
-
-        
 
 
         // Rendering
@@ -219,11 +234,13 @@ int main(int argc, char const *argv[])
         float tmp_draw = (float)glfwGetTime();
         for (int i = 0 ; i < TOTAL_CHUNKS ; i++){
             glBindVertexArray(VAO[i]);
+            glBindVertexArray(EBO[i]);
             mat4 model = GLM_MAT4_IDENTITY_INIT;
             vec3 translate = {(float)(w->loaded_chunks[i]->x) * CHUNK_X_SIZE, (float)0, (float)(w->loaded_chunks[i]->z)*CHUNK_Z_SIZE};
             glm_translate(model, translate);
             shader_set_m4(s, "model", model);
-            glDrawArrays(GL_TRIANGLES, 0, vertices_count[i]);
+            // glDrawArrays(GL_TRIANGLES, 0, vertice_count);
+            glDrawElements(GL_TRIANGLES, elements_count[i], GL_UNSIGNED_INT, 0);
         }
         float time_draw = (float)glfwGetTime() - tmp_draw;
         
@@ -239,8 +256,8 @@ int main(int argc, char const *argv[])
     }
 
     glDeleteVertexArrays(TOTAL_CHUNKS, VAO);
-    glDeleteBuffers(TOTAL_CHUNKS, VBO);
-    // glDeleteBuffers(1, &EBO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(TOTAL_CHUNKS, EBO);
     shader_cleanup(s);
     camera_cleanup(cam);
     atlas_cleanup(atlas);
