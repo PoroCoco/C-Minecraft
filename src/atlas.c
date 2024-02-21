@@ -14,7 +14,7 @@ const int TEXTURE_BLOCKS[] = {
 
 
 void atlas_texture_coord_from_index(atlas * a, int atlas_index, vec2 start, vec2 end){
-    const float padding = 0.000f;
+    const float padding = (a->texture_resolution/10.0f) / (float)a->resolution;
     int atlas_x = atlas_index % ATLAS_TEXTURE_PER_ROW; 
     int atlas_y = atlas_index / ATLAS_TEXTURE_PER_ROW;
     start[0] = (atlas_x * a->texture_resolution) / (float)a->resolution + padding;
