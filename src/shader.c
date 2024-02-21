@@ -42,7 +42,7 @@ void check_shader_compilation(unsigned int shader_id){
 
 void check_program_compilation(unsigned int program_id){
     int success;
-    DEBUG_GL(glGetProgramiv(program_id, GL_COMPILE_STATUS, &success));
+    DEBUG_GL(glGetProgramiv(program_id, GL_LINK_STATUS, &success));
     if(!success){
         DEBUG_GL(glGetProgramInfoLog(program_id, 512, NULL, infoLog));
         fprintf(stderr,"ERROR::SHADER::LINKING_FAILED %s\n", infoLog);
