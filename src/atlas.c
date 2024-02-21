@@ -21,9 +21,6 @@ void atlas_texture_coord_from_index(atlas * a, int atlas_index, vec2 start, vec2
     start[1] = (((ATLAS_TEXTURE_PER_ROW - (atlas_y+1)) * a->texture_resolution) / (float)a->resolution) + padding;
     end[0] = (((atlas_x+1) * a->texture_resolution) / (float)a->resolution) - padding;
     end[1] =  ((ATLAS_TEXTURE_PER_ROW - atlas_y) * a->texture_resolution) / (float)a->resolution - padding;
-
-    glm_vec2_print(start, stdout);
-    glm_vec2_print(end, stdout);
 }
 
 atlas * atlas_init(int resolution){
