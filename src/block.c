@@ -4,7 +4,7 @@
 
 block block_create(int id){
     block b = {.id = id, .is_solid = true};
-    if (id == -1){
+    if (id == BLOCK_AIR){
         b.is_solid = false;
     }
     
