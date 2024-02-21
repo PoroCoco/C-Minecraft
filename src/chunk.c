@@ -8,14 +8,7 @@
 
 #include <chunk.h>
 #include <atlas.h>
-
-// x,y,z , textCoordX,textCoordY
-#define ATTRIBUTE_PER_VERTEX 5 
-#define VERTEX_PER_FACE 6 
-// Number of floats per face
-#define FACE_FLOAT_COUNT (ATTRIBUTE_PER_VERTEX * VERTEX_PER_FACE)
-// Number of bytes per face
-#define FACE_BYTES (sizeof(float) * FACE_FLOAT_COUNT)
+#include <generation.h>
 
 
 static const float vertices_face_north[] = {
@@ -163,16 +156,22 @@ chunk * chunk_init(int x, int z){
         c->blocks[i] = block_create(BLOCK_AIR);
     }
 
-    for (size_t level = 0; level < 64; level++){
-        for (size_t z = 0; z < CHUNK_Z_SIZE; z++){
-            for (size_t x = 0; x < CHUNK_X_SIZE; x++){
+    printf("init chunk %d,%d\n", x, z);
+    for (size_t z = 0; z < CHUNK_Z_SIZE; z++){
+        for (size_t x = 0; x < CHUNK_X_SIZE; x++){
+            float noise_value = get_noise(x + c->x*CHUNK_X_SIZE , z+ c->z*CHUNK_Z_SIZE);
+            int height = (int)((CHUNK_Y_SIZE - 15) * (noise_value));
+            if (height < 50){
+                height = 50;
+            }
+            for (int i = height - 1; i > 0 ; i--){
                 block b;
-                if (level < 60){
-                    b = block_create(BLOCK_STONE);
-                }else{
+                if ((height - i) < 4 &&  height < 90){
                     b = block_create(BLOCK_DIRT);
+                }else{
+                    b = block_create(BLOCK_STONE);
                 }
-                c->blocks[(level * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = b;
+                c->blocks[(i * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = b;
             }
         }
     }

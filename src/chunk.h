@@ -13,6 +13,14 @@
 #define CHUNK_SIZE (CHUNK_LAYER_SIZE * CHUNK_Y_SIZE)
 
 
+// x,y,z , textCoordX,textCoordY
+#define ATTRIBUTE_PER_VERTEX 5 
+#define VERTEX_PER_FACE 6 
+// Number of floats per face
+#define FACE_FLOAT_COUNT (ATTRIBUTE_PER_VERTEX * VERTEX_PER_FACE)
+// Number of bytes per face
+#define FACE_BYTES (sizeof(float) * FACE_FLOAT_COUNT)
+
 typedef struct chunk {
     int x; 
     int z;
