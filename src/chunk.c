@@ -15,18 +15,14 @@ static const float vertices_face_north[] = {
     0.f, 0.f, 0.f,  0.0f, 0.0f,
     1.f, 0.f, 0.f,  1.0f, 0.0f,
     1.f,  1.f, 0.f,  1.0f, 1.0f,
-    1.f,  1.f, 0.f,  1.0f, 1.0f,
     0.f,  1.f, 0.f,  0.0f, 1.0f,
-    0.f, 0.f, 0.f,  0.0f, 0.0f
 };
 
 static const float vertices_face_south[] = {
     0.f, 0.f,  1.f,  0.0f, 0.0f,
     1.f, 0.f,  1.f,  1.0f, 0.0f,
     1.f,  1.f,  1.f,  1.0f, 1.0f,
-    1.f,  1.f,  1.f,  1.0f, 1.0f,
     0.f,  1.f,  1.f,  0.0f, 1.0f,
-    0.f, 0.f,  1.f,  0.0f, 0.0f
 };
 
 
@@ -34,36 +30,28 @@ static const float vertices_face_west[] = {
     0.f, 0.f, 0.f,  0.0f, 1.0f,
     0.f, 0.f,  1.f,  0.0f, 0.0f,
     0.f,  1.f,  1.f,  1.0f, 0.0f,
-    0.f,  1.f,  1.f,  1.0f, 0.0f,
     0.f,  1.f, 0.f,  1.0f, 1.0f,
-    0.f, 0.f, 0.f,  0.0f, 1.0f,
 };
 
 static const float vertices_face_east[] = {
     1.f, 0.f, 0.f,  0.0f, 1.0f,
     1.f, 0.f,  1.f,  0.0f, 0.0f,
     1.f,  1.f,  1.f,  1.0f, 0.0f,
-    1.f,  1.f,  1.f,  1.0f, 0.0f,
     1.f,  1.f, 0.f,  1.0f, 1.0f,
-    1.f, 0.f, 0.f,  0.0f, 1.0f,
 };
 
 static const float vertices_face_top[] = {
     0.f,  1.f, 0.f,  0.0f, 1.0f,
     1.f,  1.f, 0.f,  1.0f, 1.0f,
     1.f,  1.f,  1.f,  1.0f, 0.0f,
-    1.f,  1.f,  1.f,  1.0f, 0.0f,
     0.f,  1.f,  1.f,  0.0f, 0.0f,
-    0.f,  1.f, 0.f,  0.0f, 1.0f
 };
 
 static const float vertices_face_bottom[] = {
     0.f, 0.f, 0.f,  0.0f, 1.0f,
     1.f, 0.f, 0.f,  1.0f, 1.0f,
     1.f, 0.f,  1.f,  1.0f, 0.0f,
-    1.f, 0.f,  1.f,  1.0f, 0.0f,
     0.f, 0.f,  1.f,  0.0f, 0.0f,
-    0.f, 0.f, 0.f,  0.0f, 1.0f
 };
 
 void add_face_vertices(float * vertex_data, direction d, int face_count){
@@ -102,11 +90,9 @@ void add_face_elements(unsigned int * elements_data, direction d, int elements_c
     elements_data[elements_count + 0] = block_index * (DIR_COUNT * VERTEX_PER_FACE) + d * (VERTEX_PER_FACE) + 0;
     elements_data[elements_count + 1] = block_index * (DIR_COUNT * VERTEX_PER_FACE) + d * (VERTEX_PER_FACE) + 1;
     elements_data[elements_count + 2] = block_index * (DIR_COUNT * VERTEX_PER_FACE) + d * (VERTEX_PER_FACE) + 2;
-    elements_data[elements_count + 3] = block_index * (DIR_COUNT * VERTEX_PER_FACE) + d * (VERTEX_PER_FACE) + 3;
-    elements_data[elements_count + 4] = block_index * (DIR_COUNT * VERTEX_PER_FACE) + d * (VERTEX_PER_FACE) + 4;
-    elements_data[elements_count + 5] = block_index * (DIR_COUNT * VERTEX_PER_FACE) + d * (VERTEX_PER_FACE) + 5;
-
-    // memcpy(elements_data + elements_count, , sizeof(*elements_data) * 4); // 4 elements for a face
+    elements_data[elements_count + 3] = block_index * (DIR_COUNT * VERTEX_PER_FACE) + d * (VERTEX_PER_FACE) + 2;
+    elements_data[elements_count + 4] = block_index * (DIR_COUNT * VERTEX_PER_FACE) + d * (VERTEX_PER_FACE) + 3;
+    elements_data[elements_count + 5] = block_index * (DIR_COUNT * VERTEX_PER_FACE) + d * (VERTEX_PER_FACE) + 0;
 }
 
 
@@ -195,7 +181,7 @@ chunk * chunk_init(int x, int z){
 }
 
 
-unsigned int * chunk_get_elements(chunk * c, int *vertex_count, atlas * a){
+unsigned int * chunk_get_elements(chunk * c, unsigned int *vertex_count, atlas * a){
     if (c->elements_dirty){
         chunk_generate_elements_buffer(c, a);
         c->elements_dirty = false;
@@ -212,10 +198,6 @@ float texture_coord_for_vertex_x(float x_start, float x_end, int current_vertex)
     }else if (current_vertex == 2){
         return x_end;
     }else if (current_vertex == 3){
-        return x_end;
-    }else if (current_vertex == 4){
-        return x_start;
-    }else if (current_vertex == 5){
         return x_start;
     }
     fprintf(stderr, "???\n");
@@ -231,11 +213,8 @@ float texture_coord_for_vertex_y(float y_start, float y_end, int current_vertex)
         return y_end;
     }else if (current_vertex == 3){
         return y_end;
-    }else if (current_vertex == 4){
-        return y_end;
-    }else if (current_vertex == 5){
-        return y_start;
     }
+    
     fprintf(stderr, "???\n");
     return 0.f;
 }
@@ -245,11 +224,11 @@ float texture_coord_for_vertex_y(float y_start, float y_end, int current_vertex)
     |______________________________________________block_index______________________             |
     |______________________________________ directions                              |            |
     |              face vertices          |                                         |            |
-    [vertex0Dir0Block0,..,vertex5Dir0Block0;..;vertex0Dir5Block0,..,vertex5Dir5Block0;...........;.......]
-    6 vertex per direction, 6 directions per block_index, CHUNK_SIZE block_indices
+    [vertex0Dir0Block0,..,vertex3Dir0Block0;..;vertex0Dir5Block0,..,vertex3Dir5Block0;...........;.......]
+    4 vertex per direction, 6 directions per block_index, CHUNK_SIZE block_indices
 */
-float * chunk_generate_static_mesh(atlas * a, int *vertice_count){
-    float * vertices  = malloc(FACE_BYTES * 6 * CHUNK_SIZE); // Multiply by 6 as a cube have 6 faces
+float * chunk_generate_static_mesh(atlas * a, unsigned int *vertice_count){
+    float * vertices = malloc(FACE_BYTES * 6 * CHUNK_SIZE); // Multiply by 6 as a cube have 6 faces
     assert(vertices);
 
     int face_count = 0;
@@ -261,7 +240,7 @@ float * chunk_generate_static_mesh(atlas * a, int *vertice_count){
             atlas_get_coord(a, BLOCK_DIRT, texture_start, texture_end, d);
             // Shift the face coordinates and register texture
             for(int i = 0; i < FACE_FLOAT_COUNT; i++){
-                if (i%ATTRIBUTE_PER_VERTEX == 0){ // x
+                if (i%ATTRIBUTE_PER_VERTEX == 0){       // x
                     vertices[face_count * FACE_FLOAT_COUNT + i] += chunk_block_x(block_index);
                 }else if (i%ATTRIBUTE_PER_VERTEX == 1){ // y
                     vertices[face_count * FACE_FLOAT_COUNT + i] += chunk_block_y(block_index);
@@ -271,7 +250,7 @@ float * chunk_generate_static_mesh(atlas * a, int *vertice_count){
                     vertices[face_count * FACE_FLOAT_COUNT + i] = texture_coord_for_vertex_x(texture_start[0], texture_end[0], i/ATTRIBUTE_PER_VERTEX);
                 }else if (i%ATTRIBUTE_PER_VERTEX == 4){ // texture Y
                     vertices[face_count * FACE_FLOAT_COUNT + i] = texture_coord_for_vertex_y(texture_start[1], texture_end[1], i/ATTRIBUTE_PER_VERTEX);
-                }   
+                }
             }
             face_count++;
         }
@@ -291,11 +270,12 @@ void chunk_generate_elements_buffer(chunk * c, atlas * a){
             for (direction d = DIR_START; d < DIR_COUNT; d++){
                 if (!chunk_is_solid_direction(c, block_index, d)){
                     add_face_elements(c->elements, d, elements_count, block_index);
-                    elements_count += VERTEX_PER_FACE;
+                    elements_count += 6; // 2 triangles
                 }
             }
         }
     }
+    // printf("elem %d\n", elements_count);
     // Now that we know the actual size we can resize it
     c->elements = realloc(c->elements, elements_count * sizeof(*(c->elements)));
     // assert(c->elements); //We can have no vertices in the chunk, but should be fixed
@@ -321,7 +301,7 @@ void chunk_add_block(chunk * c, block b, int index){
 // ToDo : OPTI
 void chunk_remove_block(chunk * c, int index){
     if (index < 0 || index > CHUNK_SIZE){
-        fprintf(stderr, "Tried to remove a block at an invalid index inside a chunk !\n");
+        fprintf(stderr, "Tried to remove a block at an invalid index inside a chunk ! (%d)\n", index);
         return;
     }
 

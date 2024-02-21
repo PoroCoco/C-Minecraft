@@ -20,15 +20,23 @@
 #define HEIGHT 1200
 
 
+#define DEBUG_GL(command) do { \
+    command; \
+    GLenum error = glGetError(); \
+    if (error != GL_NO_ERROR) { \
+        fprintf(stderr, "OpenGL Error at %s:%d - Code %d\n", __FILE__, __LINE__, error); \
+    } \
+} while(0)
+
 void regen_world_vertices(world *w, unsigned int *VAO, unsigned int *EBO, unsigned int *elements_count, atlas * atlas){
     for (int i = 0; i < TOTAL_CHUNKS; i++){
-        glBindVertexArray(VAO[i]);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[i]);
-        glDeleteBuffers(1, &EBO[i]);
-        glGenBuffers(1, &EBO[i]);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[i]);
+        DEBUG_GL(glBindVertexArray(VAO[i]));
+        DEBUG_GL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[i]));
+        DEBUG_GL(glDeleteBuffers(1, &EBO[i]));
+        DEBUG_GL(glGenBuffers(1, &EBO[i]));
+        DEBUG_GL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[i]));
         unsigned int * elements = chunk_get_elements(w->loaded_chunks[i], &(elements_count[i]), atlas);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(*EBO) * elements_count[i], elements, GL_DYNAMIC_DRAW);
+        DEBUG_GL(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(*elements) * elements_count[i], elements, GL_STATIC_DRAW));
     }
 }
 
@@ -50,37 +58,29 @@ int main(int argc, char const *argv[])
 
     shader *s = shader_init("../shaders/shader.vert", "../shaders/shader.frag");
     
-
-    // Indices for rectangle
-    unsigned int indices[] = {
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
-    };
-    
     // Create the VAOs
     unsigned int VAO[TOTAL_CHUNKS];
-    glGenVertexArrays(TOTAL_CHUNKS, VAO);  
+    DEBUG_GL(glGenVertexArrays(TOTAL_CHUNKS, VAO));
 
     // Create the unique VBO and fill it
     unsigned int VBO;
-    glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    int vertice_count;
+    DEBUG_GL(glGenBuffers(1, &VBO));
+    DEBUG_GL(glBindBuffer(GL_ARRAY_BUFFER, VBO));
+    unsigned int vertice_count;
     float * chunk_static_vertices = chunk_generate_static_mesh(atlas, &vertice_count);
     printf("count %d\n", vertice_count);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertice_count * 5, chunk_static_vertices, GL_STATIC_DRAW);
+    DEBUG_GL(glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertice_count * ATTRIBUTE_PER_VERTEX, chunk_static_vertices, GL_STATIC_DRAW));
     free(chunk_static_vertices);
 
     // Bind the same VBO for each
     for (size_t i = 0; i < TOTAL_CHUNKS; i++){
-        glBindVertexArray(VAO[i]);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(1); 
+        DEBUG_GL(glBindVertexArray(VAO[i]));
+        DEBUG_GL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, ATTRIBUTE_PER_VERTEX * sizeof(float), (void*)0));
+        DEBUG_GL(glEnableVertexAttribArray(0));
+        DEBUG_GL(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, ATTRIBUTE_PER_VERTEX * sizeof(float), (void*)(3 * sizeof(float))));
+        DEBUG_GL(glEnableVertexAttribArray(1)); 
     }
     printf("VBO binded\n");
-    
 
     // Each chunk return its EBO from its block data
     // Each chunk return its texturesCoord from its block data
@@ -116,7 +116,7 @@ int main(int argc, char const *argv[])
 
     // Create the Element Object Buffer (the indices bufffer)
     unsigned int EBO[TOTAL_CHUNKS];
-    glGenBuffers(TOTAL_CHUNKS, EBO);
+    DEBUG_GL(glGenBuffers(TOTAL_CHUNKS, EBO));
     unsigned int elements_count[TOTAL_CHUNKS];
     // Sends the data
     // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); 
@@ -133,15 +133,15 @@ int main(int argc, char const *argv[])
     // Texture loading and generation
     stbi_set_flip_vertically_on_load(true);  
     unsigned int texture1;
-    glGenTextures(1, &texture1);
-    glBindTexture(GL_TEXTURE_2D, texture1); 
+    DEBUG_GL(glGenTextures(1, &texture1));
+    DEBUG_GL(glBindTexture(GL_TEXTURE_2D, texture1)); 
     // Setting up texture filtering (when object is bigger/smaller than texture which pixel do we take from the texture image)
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);	
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    DEBUG_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));	
+    DEBUG_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+    DEBUG_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+    DEBUG_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
     int width, height, nrChannels;
     const char * texture1_path ="../textures/atlas.png";
     unsigned char *data = stbi_load(texture1_path, &width, &height, &nrChannels, 0);
@@ -175,15 +175,15 @@ int main(int argc, char const *argv[])
     shader_set_int(s, "texture1", 0);
     // shader_set_int(s, "texture2", 1);
 
-    glEnable(GL_DEPTH_TEST);
+    DEBUG_GL(glEnable(GL_DEPTH_TEST));
 
     // Render loop
     unsigned int frame_count = 0;
     float last_frame_time = 0.0f;  
     float delta_time = 0.0f;
     
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture1);
+    DEBUG_GL(glActiveTexture(GL_TEXTURE0));
+    DEBUG_GL(glBindTexture(GL_TEXTURE_2D, texture1));
     while(!window_should_close(window))
     {
         float time_frame_begin = (float)glfwGetTime();
@@ -206,8 +206,8 @@ int main(int argc, char const *argv[])
 
         // Rendering
         // Clearing Screen
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        DEBUG_GL(glClearColor(0.2f, 0.3f, 0.3f, 1.0f));
+        DEBUG_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
         // Triangle render
 
@@ -233,31 +233,31 @@ int main(int argc, char const *argv[])
         // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
         float tmp_draw = (float)glfwGetTime();
         for (int i = 0 ; i < TOTAL_CHUNKS ; i++){
-            glBindVertexArray(VAO[i]);
-            glBindVertexArray(EBO[i]);
+            DEBUG_GL(glBindVertexArray(VAO[i]));
+            DEBUG_GL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[i]));
             mat4 model = GLM_MAT4_IDENTITY_INIT;
             vec3 translate = {(float)(w->loaded_chunks[i]->x) * CHUNK_X_SIZE, (float)0, (float)(w->loaded_chunks[i]->z)*CHUNK_Z_SIZE};
             glm_translate(model, translate);
             shader_set_m4(s, "model", model);
             // glDrawArrays(GL_TRIANGLES, 0, vertice_count);
-            glDrawElements(GL_TRIANGLES, elements_count[i], GL_UNSIGNED_INT, 0);
+            DEBUG_GL(glDrawElements(GL_TRIANGLES, elements_count[i], GL_UNSIGNED_INT, 0));
         }
         float time_draw = (float)glfwGetTime() - tmp_draw;
         
         // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-        glBindVertexArray(0);
+        DEBUG_GL(glBindVertexArray(0));
 
         glfwSwapBuffers(window);
         glfwPollEvents();
 
         frame_count++;
-        printf("Frame time : %f (regen : %f, draw %f, world %f)\n", delta_time, time_regen, time_draw, time_world_update);
+        // printf("Frame time : %f (regen : %f, draw %f, world %f)\n", delta_time, time_regen, time_draw, time_world_update);
     }
 
-    glDeleteVertexArrays(TOTAL_CHUNKS, VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(TOTAL_CHUNKS, EBO);
+    DEBUG_GL(glDeleteVertexArrays(TOTAL_CHUNKS, VAO));
+    DEBUG_GL(glDeleteBuffers(1, &VBO));
+    DEBUG_GL(glDeleteBuffers(TOTAL_CHUNKS, EBO));
     shader_cleanup(s);
     camera_cleanup(cam);
     atlas_cleanup(atlas);
