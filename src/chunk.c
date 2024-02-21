@@ -154,8 +154,8 @@ chunk * chunk_init(int x, int z){
     }
 
     printf("init chunk %d,%d\n", x, z);
-    for (size_t z = 0; z < CHUNK_Z_SIZE; z++){
-        for (size_t x = 0; x < CHUNK_X_SIZE; x++){
+    for (int z = 0; z < CHUNK_Z_SIZE; z++){
+        for (int x = 0; x < CHUNK_X_SIZE; x++){
             float noise_value = get_noise(x + c->x*CHUNK_X_SIZE , z+ c->z*CHUNK_Z_SIZE);
             int height = (int)((CHUNK_Y_SIZE - 15) * (noise_value));
             if (height < 50){
