@@ -21,15 +21,15 @@
 
 
 void regen_world_vertices(world *w, unsigned int *VBO, unsigned int *VAO, int *vertices_count, atlas * atlas){
-    glDeleteVertexArrays(TOTAL_CHUNKS, VAO);
-    glDeleteBuffers(TOTAL_CHUNKS, VBO);
-    glGenVertexArrays(TOTAL_CHUNKS, VAO);
-    glGenBuffers(TOTAL_CHUNKS, VBO);
     for (int i = 0; i < TOTAL_CHUNKS; i++){
+        glDeleteVertexArrays(1, &VAO[i]);
+        glDeleteBuffers(1, &VBO[i]);
+        glGenVertexArrays(1, &VAO[i]);
+        glGenBuffers(1, &VBO[i]);
         glBindVertexArray(VAO[i]);
         glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
         float * chunk_vertices = chunk_get_vertices(w->loaded_chunks[i], &vertices_count[i], atlas);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices_count[i] * 5, chunk_vertices, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices_count[i] * 5, chunk_vertices, GL_DYNAMIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
@@ -62,6 +62,11 @@ int main(int argc, char const *argv[])
         1, 2, 3  // second triangle
     };
     
+    // Create the VAOs
+    // Bind the same VBO for each
+    // Each chunk return its EBO from its block data
+    // Each chunk return its texturesCoord from its block data
+
     // Setting the vertex attributes and VBO inside a VAO (Vertex Array object)
     unsigned int VAO[TOTAL_CHUNKS];
     glGenVertexArrays(TOTAL_CHUNKS, VAO);  
@@ -129,26 +134,26 @@ int main(int argc, char const *argv[])
     }
     stbi_image_free(data);
 
-    unsigned int texture2;
-    glGenTextures(1, &texture2);
-    glBindTexture(GL_TEXTURE_2D, texture2); 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    const char * texture2_path = "../textures/awesomeface.png";
-    data = stbi_load(texture2_path, &width, &height, &nrChannels, 0);
-    if (data){
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }else{
-        fprintf(stderr, "Failed to load a texture : %s\n", texture2_path);
-    }
-    stbi_image_free(data);
+    // unsigned int texture2;
+    // glGenTextures(1, &texture2);
+    // glBindTexture(GL_TEXTURE_2D, texture2); 
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // const char * texture2_path = "../textures/awesomeface.png";
+    // data = stbi_load(texture2_path, &width, &height, &nrChannels, 0);
+    // if (data){
+    //     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    //     glGenerateMipmap(GL_TEXTURE_2D);
+    // }else{
+    //     fprintf(stderr, "Failed to load a texture : %s\n", texture2_path);
+    // }
+    // stbi_image_free(data);
 
     shader_use(s);
     shader_set_int(s, "texture1", 0);
-    shader_set_int(s, "texture2", 1);
+    // shader_set_int(s, "texture2", 1);
 
     glEnable(GL_DEPTH_TEST);
 
@@ -156,6 +161,9 @@ int main(int argc, char const *argv[])
     unsigned int frame_count = 0;
     float last_frame_time = 0.0f;  
     float delta_time = 0.0f;
+    
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture1);
     while(!window_should_close(window))
     {
         float time_frame_begin = (float)glfwGetTime();
@@ -165,9 +173,19 @@ int main(int argc, char const *argv[])
         window_process_input(window, delta_time);
 
         // Update logic
+        float time_world_update = 0.0f;
+        float time_regen = 0.0f;
+        float tmp_world_update = (float)glfwGetTime();
         world_update_position(w, cam->cameraPos[0], cam->cameraPos[2]);
+        time_world_update = (float)glfwGetTime() - tmp_world_update;
+
+        float tmp_regen = (float)glfwGetTime();
         regen_world_vertices(w, VBO, VAO, vertices_count, atlas);
-        float time_update = (float)glfwGetTime() - time_frame_begin;
+        time_regen = (float)glfwGetTime() - tmp_regen;
+
+
+
+
         
 
 
@@ -196,17 +214,11 @@ int main(int argc, char const *argv[])
         // glm_scale(trans, (vec3){0.75f, 0.75f, 0.75f}); 
         // shader_set_m4(s, "transform", trans);
 
-
-        
         // Wireframe
         // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
         float tmp_draw = (float)glfwGetTime();
         for (int i = 0 ; i < TOTAL_CHUNKS ; i++){
             glBindVertexArray(VAO[i]);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, texture1);
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, texture2);
             mat4 model = GLM_MAT4_IDENTITY_INIT;
             vec3 translate = {(float)(w->loaded_chunks[i]->x) * CHUNK_X_SIZE, (float)0, (float)(w->loaded_chunks[i]->z)*CHUNK_Z_SIZE};
             glm_translate(model, translate);
@@ -223,7 +235,7 @@ int main(int argc, char const *argv[])
         glfwPollEvents();
 
         frame_count++;
-        printf("Frame time : %f (update : %f, draw %f)\n", delta_time, time_update, time_draw);
+        printf("Frame time : %f (regen : %f, draw %f, world %f)\n", delta_time, time_regen, time_draw, time_world_update);
     }
 
     glDeleteVertexArrays(TOTAL_CHUNKS, VAO);
