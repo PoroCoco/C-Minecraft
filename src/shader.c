@@ -46,8 +46,8 @@ shader * shader_init(const char * vertexPath, const char * fragmentPath){
     assert(s);
 
     // Loading the shaders    
-    char * vertexShaderSource = read_file(vertexPath);
-    char * fragmentShaderSource = read_file(fragmentPath);
+    char const * vertexShaderSource = read_file(vertexPath);
+    char const * fragmentShaderSource = read_file(fragmentPath);
 
     // Shaders creations
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
