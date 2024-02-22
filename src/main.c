@@ -72,14 +72,12 @@ int main(int argc, char const *argv[])
     DEBUG_GL(glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertice_count * ATTRIBUTE_PER_VERTEX, chunk_static_vertices, GL_STATIC_DRAW));
     free(chunk_static_vertices);
 
-    // Bind the same VBO for each
-    for (size_t i = 0; i < TOTAL_CHUNKS; i++){
-        DEBUG_GL(glBindVertexArray(VAO));
-        DEBUG_GL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, ATTRIBUTE_PER_VERTEX * sizeof(float), (void*)0));
-        DEBUG_GL(glEnableVertexAttribArray(0));
-        DEBUG_GL(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, ATTRIBUTE_PER_VERTEX * sizeof(float), (void*)(3 * sizeof(float))));
-        DEBUG_GL(glEnableVertexAttribArray(1)); 
-    }
+
+    DEBUG_GL(glBindVertexArray(VAO));
+    DEBUG_GL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, ATTRIBUTE_PER_VERTEX * sizeof(float), (void*)0));
+    DEBUG_GL(glEnableVertexAttribArray(0));
+    DEBUG_GL(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, ATTRIBUTE_PER_VERTEX * sizeof(float), (void*)(3 * sizeof(float))));
+    DEBUG_GL(glEnableVertexAttribArray(1)); 
     printf("VBO binded\n");
 
     // Each chunk return its EBO from its block data
