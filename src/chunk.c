@@ -4,6 +4,7 @@
 #include <string.h>
 #include <math.h>
 
+#include <GLFW/glfw3.h>
 #include <cglm/cglm.h> 
 
 #include <chunk.h>
@@ -293,6 +294,7 @@ chunk * chunk_init(int x, int z){
         }
     }
     // c->blocks[0] = block_create(BLOCK_DIRT);
+    c->view_time = (float)glfwGetTime();
 
     c->faces_offsets = NULL;
     c->faces_offsets = 0;

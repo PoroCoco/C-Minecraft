@@ -99,6 +99,15 @@ void regen_world_vertices(world *w, unsigned int VAO, unsigned int *IBA, unsigne
     }
 }
 
+float chunk_y_offset_spawn(float chunk_time){
+    const static float fall_time = 1.0f;
+    float current_time = (float)glfwGetTime();
+    float difference = current_time - chunk_time ;
+    if (difference > fall_time) return 0.f;
+    printf("diff %f\n", difference);
+    return (  ((powf(1.f-difference, 2.f)) * 1280));
+}
+
 int main(int argc, char const *argv[])
 {
     srand(654);
@@ -251,6 +260,10 @@ int main(int argc, char const *argv[])
             vec3 translate = {(float)(w->loaded_chunks[i]->x) * CHUNK_X_SIZE, (float)0, (float)(w->loaded_chunks[i]->z)*CHUNK_Z_SIZE};
             glm_translate(model, translate);
             shader_set_m4(s, "model", model);
+
+            // Make chunk fall out of the sky
+            float y_offset = chunk_y_offset_spawn(w->loaded_chunks[i]->view_time);
+            shader_set_float(s, "chunkYOffset", y_offset);
             DEBUG_GL(glDrawArraysInstanced(GL_TRIANGLES, 0, 6, instances_count[i]));
         }
         float time_draw = (float)glfwGetTime() - tmp_draw;

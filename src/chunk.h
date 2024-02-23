@@ -37,6 +37,8 @@ typedef struct chunk {
     float * rotations_values;
     unsigned int rotations_count;
     bool rotations_dirty;
+
+    float view_time; // The time when the chunk was loaded/in view
 } chunk;
 
 chunk * chunk_init(int x, int y);
