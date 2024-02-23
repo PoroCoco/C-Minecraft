@@ -10,7 +10,7 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 uniform mat4 rotationMatrices[6];
-
+uniform float chunkYOffset;
 
 out vec2 texCoord;
 
@@ -35,6 +35,6 @@ void main()
     else if (int(inRotationIndex) == 5){
         r = r + vec4(1.,0.,0.,0.);
     }
-    gl_Position = projection * view *  model * vec4(r.xyz + inPosOffet , 1.0);
+    gl_Position = projection * view *  model * vec4(r.x + inPosOffet.x, r.y + inPosOffet.y + chunkYOffset, r.z + inPosOffet.z, 1.0);
     texCoord = inTexStart + inTexStep;
 }
