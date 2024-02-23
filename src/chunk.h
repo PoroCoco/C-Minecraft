@@ -31,11 +31,6 @@ typedef struct chunk {
     unsigned int faces_count; // The number of visible block faces
     bool faces_dirty;
 
-
-
-    unsigned int *elements; // The openGL element buffer data. ToDo: rename it to elements_buffer
-    unsigned int elements_count;
-    bool elements_dirty;
     float * textures_buffer;
     unsigned int textures_count;
     bool textures_dirty;

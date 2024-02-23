@@ -208,7 +208,9 @@ float * chunk_get_textures(chunk * c, unsigned int * faces_count, atlas * a){
 size_t chunk_sizeof(chunk * c){
     size_t size = 0;
     size += sizeof(c->blocks);
-    size += c->elements_count * sizeof(*(c->elements));
+    size += c->textures_count * sizeof(*(c->textures_buffer));
+    size += c->faces_count * sizeof(*(c->faces_offsets));
+    size += c->rotations_count * sizeof(*(c->rotations_values));
     return size;
 }
 
@@ -291,9 +293,7 @@ chunk * chunk_init(int x, int z){
         }
     }
     // c->blocks[0] = block_create(BLOCK_DIRT);
-    c->elements = NULL;
-    c->elements_count = 0;
-    c->elements_dirty = true;
+
     c->faces_offsets = NULL;
     c->faces_offsets = 0;
     c->faces_dirty = true;
@@ -471,6 +471,5 @@ void chunk_cleanup(chunk * c){
     free(c->rotations_values);
     free(c->textures_buffer);
     free(c->faces_offsets);
-    free(c->elements);
     free(c);
 }
