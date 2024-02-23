@@ -13,21 +13,35 @@
 #define CHUNK_SIZE (CHUNK_LAYER_SIZE * CHUNK_Y_SIZE)
 
 
-// x,y,z , textCoordX,textCoordY
-#define ATTRIBUTE_PER_VERTEX 5 
+// x,y,z , texStepX,texStepY
+#define ATTRIBUTE_PER_VERTEX 5
 #define VERTEX_PER_FACE 4
 // Number of floats per face
 #define FACE_FLOAT_COUNT (ATTRIBUTE_PER_VERTEX * VERTEX_PER_FACE)
 // Number of bytes per face
 #define FACE_BYTES (sizeof(float) * FACE_FLOAT_COUNT)
 
+#define MAX_FACE_IN_CHUNK 10000
+
 typedef struct chunk {
     int x; 
     int z;
     block blocks[CHUNK_SIZE];
-    unsigned int *elements; // The openGL element buffer data
+    float * faces_offsets; // vec3
+    unsigned int faces_count; // The number of visible block faces
+    bool faces_dirty;
+
+
+
+    unsigned int *elements; // The openGL element buffer data. ToDo: rename it to elements_buffer
     unsigned int elements_count;
     bool elements_dirty;
+    float * textures_buffer;
+    unsigned int textures_count;
+    bool textures_dirty;
+    float * rotations_values;
+    unsigned int rotations_count;
+    bool rotations_dirty;
 } chunk;
 
 chunk * chunk_init(int x, int y);
@@ -40,8 +54,19 @@ float chunk_norm_pos_x(chunk *c, float x);
 float chunk_norm_pos_z(chunk *c, float z);
 bool chunk_is_pos_inside_block(chunk const * c, vec3 pos);
 
-float * chunk_generate_static_mesh(atlas * a, unsigned int *vertice_count);
-unsigned int * chunk_get_elements(chunk * c, unsigned int *vertex_count, atlas * a);
-void chunk_generate_elements_buffer(chunk * c, atlas * a);
+// float * chunk_generate_static_mesh(unsigned int *vertice_count);
+// unsigned int * chunk_get_elements(chunk * c, unsigned int *vertex_count);
+// void chunk_generate_elements_buffer(chunk * c);
+
+bool chunk_is_solid_direction(chunk const * c, int block_index, direction d);
+
+float * chunk_get_faces_offsets(chunk * c, unsigned int *instance_count);
+float * chunk_get_textures(chunk * c, unsigned int * faces_count, atlas * a);
+float * chunk_get_rotations_values(chunk * c, unsigned int *instance_count);
+
+int chunk_block_x(int block_index);
+int chunk_block_y(int block_index);
+int chunk_block_z(int block_index);
+
 
 void chunk_cleanup(chunk * c);
