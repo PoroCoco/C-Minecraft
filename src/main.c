@@ -15,19 +15,14 @@
 #include <chunk.h>
 #include <world.h>
 #include <atlas.h>
+#include <gpu.h>
+#ifdef __unix__
+#include <pthread.h>
+#endif
 
 
-#define WIDTH 2300
-#define HEIGHT 1200
-
-
-#define DEBUG_GL(command) do { \
-    command; \
-    GLenum error = glGetError(); \
-    if (error != GL_NO_ERROR) { \
-        fprintf(stderr, "OpenGL Error at %s:%d - Code %d\n", __FILE__, __LINE__, error); \
-    } \
-} while(0)
+#define WIDTH 1920
+#define HEIGHT 1080
 
 
 static const float vertices_face_south[] = {
@@ -106,7 +101,7 @@ float chunk_y_offset_spawn(float chunk_time){
     float current_time = (float)glfwGetTime();
     float difference = current_time - chunk_time ;
     if (difference > fall_time) return 0.f;
-    return (  ((powf(1.f-difference, 2.f)) * 1280));
+    return (((1.f-powf(difference, 0.03f)) * 4000));
 }
 
 int main(int argc, char const *argv[])
@@ -116,6 +111,7 @@ int main(int argc, char const *argv[])
     camera * cam = camera_init();
     player * player = player_init(cam, w);
     atlas * atlas = atlas_init(ATLAS_RESOLUTION);
+    gpu *g = gpu_init();
     GLFWwindow* window = window_init(WIDTH, HEIGHT, cam, player);
 
     // GLAD init
@@ -209,6 +205,10 @@ int main(int argc, char const *argv[])
     DEBUG_GL(glActiveTexture(GL_TEXTURE0));
     DEBUG_GL(glBindTexture(GL_TEXTURE_2D, texture1));
 
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK); 
+    // Wireframe
+    // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
     printf("starting render loop\n");
     regen_world_vertices(w, VAO, IBA, instances_count, atlas, true);
     while(!window_should_close(window))
@@ -229,11 +229,14 @@ int main(int argc, char const *argv[])
             tmp_regen = (float)glfwGetTime();
             regen_world_vertices(w, VAO, IBA, instances_count, atlas, true);
 
+        }else{
+            time_world_update = (float)glfwGetTime() - tmp_world_update;
         }
         if (tmp_regen == 0.0f) tmp_regen = (float)glfwGetTime();
         regen_world_vertices(w, VAO, IBA, instances_count, atlas, false);
         time_regen = (float)glfwGetTime() - tmp_regen;
 
+        float tmp_misc = (float)glfwGetTime();
         // Clearing Screen
         DEBUG_GL(glClearColor(0.2f, 0.3f, 0.3f, 1.0f));
         DEBUG_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
@@ -244,9 +247,8 @@ int main(int argc, char const *argv[])
         shader_set_m4(s, "view", cam->view);
         shader_set_m4(s, "projection", projection);
         shader_set_rotation_matrices(s, "rotationMatrices", (float (*)[4][4])rotation_matrix);
+        float time_misc = (float)glfwGetTime() - tmp_misc; 
 
-        // Wireframe
-        // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
         float tmp_draw = (float)glfwGetTime();
         for (int i = 0 ; i < TOTAL_CHUNKS ; i++){
             DEBUG_GL(glBindVertexArray(VAO[i]));
@@ -260,13 +262,13 @@ int main(int argc, char const *argv[])
             shader_set_float(s, "chunkYOffset", y_offset);
             DEBUG_GL(glDrawArraysInstanced(GL_TRIANGLES, 0, 6, instances_count[i]));
         }
-        float time_draw = (float)glfwGetTime() - tmp_draw;
         
         glfwSwapBuffers(window);
         glfwPollEvents();
-
+        glFinish();
+        float time_draw = (float)glfwGetTime() - tmp_draw;
         frame_count++;
-        printf("Frame time : %f (regen : %f, draw %f, world %f)\n", delta_time, time_regen, time_draw, time_world_update);
+        // printf("Frame time : %f (regen : %f, draw %f, world %f, misc %f)\n", delta_time, time_regen, time_draw, time_world_update, time_misc);
     }
 
     DEBUG_GL(glDeleteVertexArrays(TOTAL_CHUNKS, VAO));
@@ -275,6 +277,7 @@ int main(int argc, char const *argv[])
     shader_cleanup(s);
     camera_cleanup(cam);
     atlas_cleanup(atlas);
+    gpu_cleanup(g);
 
     window_cleanup(window);
     return 0;
