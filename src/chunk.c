@@ -274,7 +274,7 @@ chunk * chunk_init(int x, int z){
         c->blocks[i] = block_create(BLOCK_AIR);
     }
 
-    printf("init chunk %d,%d\n", x, z);
+    // printf("init chunk %d,%d\n", x, z);
     for (int z = 0; z < CHUNK_Z_SIZE; z++){
         for (int x = 0; x < CHUNK_X_SIZE; x++){
             float noise_value = get_noise(x + c->x*CHUNK_X_SIZE , z+ c->z*CHUNK_Z_SIZE);
@@ -467,6 +467,15 @@ bool chunk_is_pos_inside_block(chunk const * c, vec3 pos){
         return false;
     }
     return c->blocks[block_index].is_solid;
+}
+
+
+uint64_t chunk_get_id_pos(int x, int z){
+    return (uint64_t)(((uint64_t)x << 32) | (uint64_t)(unsigned int)z);
+}
+
+uint64_t chunk_get_id(chunk * c){
+    return chunk_get_id_pos(c->x, c->z);
 }
 
 void chunk_cleanup(chunk * c){
