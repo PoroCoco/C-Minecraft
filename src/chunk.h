@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include <block.h>
 #include <direction.h>
@@ -54,6 +55,9 @@ bool chunk_is_pos_inside_block(chunk const * c, vec3 pos);
 // float * chunk_generate_static_mesh(unsigned int *vertice_count);
 // unsigned int * chunk_get_elements(chunk * c, unsigned int *vertex_count);
 // void chunk_generate_elements_buffer(chunk * c);
+
+uint64_t chunk_get_id(chunk * c);
+uint64_t chunk_get_id_pos(int x, int z);
 
 bool chunk_is_solid_direction(chunk const * c, int block_index, direction d);
 
