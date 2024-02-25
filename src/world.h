@@ -1,22 +1,22 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
+
+#define RENDER_DISTANCE 16*2
+#define TOTAL_CHUNKS (RENDER_DISTANCE*RENDER_DISTANCE)
 
 #include <chunk.h>
-
-#define RENDER_DISTANCE 8
-#define TOTAL_CHUNKS (RENDER_DISTANCE*RENDER_DISTANCE)
+#include <gpu.h>
+#include <hashtable.h>
 
 
 typedef struct world {
     // Needs a set somewhere to quickly check if a chunk is cached (retrieve it) or have been generated (load it) or needs to be generated (gen it)
 
-    // Make this a dynamic array 
-    chunk ** cached_chunks;
-    unsigned int cached_chunks_count;
+    htb *cache;
     chunk * loaded_chunks[TOTAL_CHUNKS];
     chunk * center_chunk; // chunk in the center of the loaded world, where the player currently is
-
 } world;
 
 
