@@ -13,7 +13,7 @@ include_directories(src/)
 
 
 
-add_executable(main src/main.c src/glad.c src/window.c src/shader.c src/camera.c src/block.c src/chunk.c src/world.c src/player.c src/direction.c src/atlas.c src/generation.c)
+add_executable(main src/main.c src/glad.c src/window.c src/shader.c src/camera.c src/block.c src/chunk.c src/world.c src/player.c src/direction.c src/atlas.c src/generation.c src/gpu.c src/hashtable.c)
 
 if( WIN32 )
     link_directories(${LIB_FOLDER}/glfw-3.3.9.bin.WIN64/lib-vc2022)
@@ -22,5 +22,5 @@ if( WIN32 )
     target_compile_definitions(main PRIVATE _CRT_SECURE_NO_WARNINGS) # Removes sprintf warning from cglm
 elseif( UNIX )
     target_link_libraries(main m glfw)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g3 -ggdb")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g3 -ggdb -Wall -Wextra")
 endif()
