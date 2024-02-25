@@ -3,6 +3,22 @@
 #include <assert.h>
 #include <stdio.h>
 
+void _htb_get_lock(htb* h){
+    #ifdef _WIN32
+        WaitForSingleObject(h->mutex, INFINITE);
+    #elif __linux__
+        pthread_mutex_lock(&h->mutex);
+    #endif
+}
+
+void _htb_release_lock(htb* h){
+    #ifdef _WIN32
+        ReleaseMutex(h->mutex);
+    #elif __linux__
+        pthread_mutex_unlock(&h->mutex);
+    #endif
+}
+
 
 uint64_t hash(htb* h, int64_t key){
     key = ((key >> 32) ^ key) * 0x45d9f3b;
@@ -23,11 +39,17 @@ htb * htb_init(uint64_t size){
         h->table[i].keys = malloc(sizeof(h->table[i].keys));
         h->table[i].count = 0;
     }
+    #ifdef _WIN32
+        h->mutex = CreateMutex(NULL, FALSE,NULL);
+    #elif __linux__
+        pthread_mutex_init(&h->mutex, NULL);
+    #endif
     return h;
 }
 
 void htb_add(htb* h, int64_t key, void* value){
     bucket *b = h->table + hash(h, key);
+    _htb_get_lock(h);
     if (b->count == 0){
         h->used_buckets++;
     }
@@ -40,10 +62,12 @@ void htb_add(htb* h, int64_t key, void* value){
     b->keys[b->count] = key;
     b->count++;
     h->total_entries++;
+    _htb_release_lock(h);
 }
 
 void htb_remove(htb* h, int64_t key){
     bucket *b = h->table + hash(h, key);
+    _htb_get_lock(h);
     for (size_t i = 0; i < b->count; i++){
         if (b->keys[i] == key){
             // Bucket doesn't scale down
@@ -56,30 +80,38 @@ void htb_remove(htb* h, int64_t key){
             if (b->count == 0){
                 h->used_buckets--;
             }
+            _htb_release_lock(h);
             return;
         }
     }
     fprintf(stderr, "Tried to remove a key that wasn't stored !\n");
+    _htb_release_lock(h);
 }
 
 bool htb_exist(htb* h, int64_t key){
     bucket *b = h->table + hash(h, key);
+    _htb_get_lock(h);
     for (size_t i = 0; i < b->count; i++){
         if (b->keys[i] == key){
+            _htb_release_lock(h);
             return true;
         }
     }
+    _htb_release_lock(h);
     return false;
 }
 
 void * htb_get(htb* h, int64_t key){
     bucket *b = h->table + hash(h, key);
+    _htb_get_lock(h);
     for (size_t i = 0; i < b->count; i++){
         if (b->keys[i] == key){
+            _htb_release_lock(h);
             return b->values[i];
         }
     }
     fprintf(stderr, "Tried to get a key that wasn't stored !\n");
+    _htb_release_lock(h);
     return NULL;
 }
 void htb_cleanup(htb* h, void free_value (void*)){
@@ -92,5 +124,10 @@ void htb_cleanup(htb* h, void free_value (void*)){
         free(b->keys);
     }
     free(h->table);
+    #ifdef _WIN32
+        CloseHandle(h->mutex);
+    #elif __linux__
+        pthread_mutex_destroy(&h->mutex);
+    #endif
     free(h);
 }
