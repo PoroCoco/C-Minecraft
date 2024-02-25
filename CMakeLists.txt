@@ -2,9 +2,10 @@ cmake_minimum_required(VERSION 3.7)
 
 project(C-Minecraft C)
 
-set(LIB_FOLDER C:/Programmation/Libraries)
+set(LIB_FOLDER path/to/GLFW/libary)
 
 
+find_package(OpenGL REQUIRED)
 
 include_directories(${LIB_FOLDER}/glfw-3.3.9.bin.WIN64/include)
 include_directories(include/)
