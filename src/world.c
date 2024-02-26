@@ -22,7 +22,7 @@ world * world_init(gpu * gpu){
 
     w->center_chunk = world_get_loaded_chunk(w, 0, 0);
     w->cache = htb_init(100000);
-    
+    w->chunk_to_acquire = queue_init(2*TOTAL_CHUNKS*10);
     return w;
 }
 
@@ -139,30 +139,18 @@ void world_update_discarded(world * w, chunk ** discarded){
 
         index++;
     }
-    printf("Discarded %d chunks\n", index);
+    // printf("Discarded %d chunks\n", index);
 }
 
-// Thread function
-void world_acquire_chunk(){
 
-    return ;
-}
 void world_update_acquired(world * w, int *acquired){
     int index = 0;
     int x,z;
     while(acquired[index*2] != INT_MAX){
-        // create thread that create the chunk
         x = acquired[index*2 + 0];
         z = acquired[index*2 + 1];
-        chunk * c;
-        if (chunk_in_cache_pos(w, x, z)){
-            c = world_get_chunk_cache(w, x, z);
-        }else{
-            c = chunk_init(x, z);
-        }
-        uint64_t chunk_index = fixray_add(w->loaded_chunks, c);
-        // Add to gpu
-        gpu_upload(w->gpu, chunk_index, c);
+        queue_enqueue(w->chunk_to_acquire, (void*)x);
+        queue_enqueue(w->chunk_to_acquire, (void*)z);
         index++;
     }
     printf("Acquired %d\n", index);
@@ -183,24 +171,49 @@ bool world_update_position(world * w, float x, float z){
     discarded[0] = NULL;
     static int acquired[TOTAL_CHUNKS*2+1]; //x0,y0,x1,y1 INT_MAX terminated;
     acquired[0] = INT_MAX;
+
+
+    // get last chunk
+    int count = 0;
+    while (!queue_is_empty(w->chunk_to_acquire) && count < 5){
+        int x = (int)queue_dequeue(w->chunk_to_acquire);
+        int z = (int)queue_dequeue(w->chunk_to_acquire);
+        if (x >= (new_center_x - (RENDER_DISTANCE/2)) &&
+            z >= (new_center_z - (RENDER_DISTANCE/2)) &&
+            x < (new_center_x + (RENDER_DISTANCE/2)) &&
+            z < (new_center_z + (RENDER_DISTANCE/2))){
+            chunk * c;
+            if (chunk_in_cache_pos(w, x, z)){
+                c = world_get_chunk_cache(w, x, z);
+            }else{
+                c = chunk_init(x, z);
+            }
+            uint64_t chunk_index = fixray_add(w->loaded_chunks, c);
+            gpu_upload(w->gpu, chunk_index, c);
+            count++;
+        }
+    }
+
+    // ToDo : just like the acquired chunks this could be computed by a function instead of looping
+    for (size_t i = 0; i < TOTAL_CHUNKS; i++){//Todo : for each fixray
+        if (w->loaded_chunks->container[i] != _fixray_null){
+            chunk *c = w->loaded_chunks->container[i];
+            if (!chunk_in_range(c, new_center_x, new_center_z)){
+                discarded[discard_index++] = c;
+            }
+        }
+    }
+    discarded[discard_index] = NULL;
+    world_update_discarded(w, discarded);
     // If we switched chunks
     if (new_center_x != w->center_chunk->x || new_center_z != w->center_chunk->z){
         printf("new center chunk %d,%d (previous %d,%d)\n", new_center_x, new_center_z, w->center_chunk->x, w->center_chunk->z);
         
         // Find the chunks that were discarded 
         // ToDo : just like the acquired chunks this could be computed by a function instead of looping
-        for (size_t i = 0; i < TOTAL_CHUNKS; i++){//Todo : for each fixray
-            if (w->loaded_chunks->container[i] != _fixray_null){
-                chunk *c = w->loaded_chunks->container[i];
-                if (!chunk_in_range(c, new_center_x, new_center_z)){
-                    discarded[discard_index++] = c;
-                }
-            }
-        }
-        discarded[discard_index] = NULL;
+        
         world_compute_acquired_chunks(w->center_chunk->x, new_center_x, w->center_chunk->z, new_center_z, acquired);
 
-        world_update_discarded(w, discarded);
         world_update_acquired(w, acquired);
 
 
@@ -273,6 +286,6 @@ void world_cleanup(world * w){
     }
 
     htb_cleanup(w->cache, (void (*)(void*))chunk_cleanup);
-
+    queue_cleanup(w->chunk_to_acquire);
     free(w);
 }

@@ -7,6 +7,7 @@
 #include <gpu.h>
 #include <hashtable.h>
 #include <fixed_array.h>
+#include <queue.h>
 
 
 typedef struct world {
@@ -15,6 +16,7 @@ typedef struct world {
     htb* loaded_chunks_index;
     fixray* loaded_chunks;
     chunk* center_chunk; // chunk in the center of the loaded world, where the player currently is
+    queue* chunk_to_acquire;
 } world;
 
 
