@@ -450,11 +450,11 @@ void chunk_remove_block(chunk * c, int index){
 
 float chunk_norm_pos_x(chunk * c, float x){
     x = fmodf(x, (float)CHUNK_X_SIZE);
-    return (float) (x > 0.0 ? x : x + 16.0);
+    return (float) (x > 0.0 ? x : x + (float)CHUNK_X_SIZE);
 }
 float chunk_norm_pos_z(chunk * c, float z){
     z = fmodf(z, (float)CHUNK_Z_SIZE);
-    return (float) (z > 0.0 ? z : z + 16.0);
+    return (float) (z > 0.0 ? z : z + (float)CHUNK_Z_SIZE);
 }
 
 int chunk_pos_to_index(vec3 pos){
