@@ -7,6 +7,7 @@
 typedef enum block_id {
     BLOCK_DIRT = 0,
     BLOCK_STONE,
+    BLOCK_WATER,
     BLOCK_COUNT
 } block_id;
 
@@ -14,6 +15,7 @@ typedef enum block_id {
 typedef struct block {
     block_id id;
     bool is_solid;
+    bool is_transparent;
 } block;
 
 
