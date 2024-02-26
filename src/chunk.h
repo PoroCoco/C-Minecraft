@@ -22,7 +22,7 @@
 // Number of bytes per face
 #define FACE_BYTES (sizeof(float) * FACE_FLOAT_COUNT)
 
-#define MAX_FACE_IN_CHUNK 10000
+#define MAX_FACE_IN_CHUNK 15000
 
 #define RENDER_DISTANCE 16*2
 #define TOTAL_CHUNKS (RENDER_DISTANCE*RENDER_DISTANCE)

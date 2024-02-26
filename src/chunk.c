@@ -115,7 +115,9 @@ void chunk_generate_faces_rotations(chunk * c){
 // Returns a pointer to the rotations values for this chunk, this pointer only serve as a view and shouldn't be freed
 float * chunk_get_rotations_values(chunk * c, unsigned int *instance_count){
     if (c->rotations_dirty){
+        // float time_start = (float)glfwGetTime();
         chunk_generate_faces_rotations(c);
+        // printf("rotations %f\n", (float)glfwGetTime() - time_start);
         c->rotations_dirty = false;
     }
     *instance_count = c->rotations_count;
@@ -161,9 +163,10 @@ void chunk_generate_faces_offsets(chunk * c){
 
 // Returns a pointer to the faces offsets for this chunk, this pointer only serve as a view and shouldn't be free
 float * chunk_get_faces_offsets(chunk * c, unsigned int *instance_count){
-    // printf("getting faces\n");
     if (c->faces_dirty){
+        // float time_start = (float)glfwGetTime();
         chunk_generate_faces_offsets(c);
+        // printf("faces %f\n", (float)glfwGetTime() - time_start);
         c->faces_dirty = false;
     }
     *instance_count = c->faces_count;
@@ -199,7 +202,9 @@ void chunk_generate_textures_buffer(chunk * c, atlas * a){
 // Returns a pointer to the texture buffer for this chunk, this pointer only serve as a view and shouldn't be free
 float * chunk_get_textures(chunk * c, unsigned int * faces_count, atlas * a){
     if (c->textures_dirty){
+        // float time_start = (float)glfwGetTime();
         chunk_generate_textures_buffer(c, a);
+        // printf("textures %f\n", (float)glfwGetTime() - time_start);
         c->textures_dirty = false;
     }
     *faces_count = c->faces_count;
@@ -279,17 +284,27 @@ chunk * chunk_init(int x, int z){
         for (int x = 0; x < CHUNK_X_SIZE; x++){
             float noise_value = get_noise(x + c->x*CHUNK_X_SIZE , z+ c->z*CHUNK_Z_SIZE);
             int height = (int)((CHUNK_Y_SIZE - 15) * (noise_value));
-            if (height < 50){
-                height = 50;
-            }
-            for (int i = height - 1; i > 0 ; i--){
-                block b;
-                if ((height - i) < 4 &&  height < 90){
-                    b = block_create(BLOCK_DIRT);
-                }else{
-                    b = block_create(BLOCK_STONE);
+            if (height < 30){
+                int new_height = 30;
+                for (int i = new_height - 1; i > 0 ; i--){
+                    block b;
+                    if ((new_height-i) < 30){
+                        b = block_create(BLOCK_WATER);
+                    }else if ((new_height-i) < new_height){
+                        b = block_create(BLOCK_STONE);
+                    }
+                    c->blocks[(i * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = b;
                 }
-                c->blocks[(i * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = b;
+            }else{
+                for (int i = height - 1; i > 0 ; i--){
+                    block b;
+                    if ((height - i) < 4 &&  height < 90){
+                        b = block_create(BLOCK_DIRT);
+                    }else{
+                        b = block_create(BLOCK_STONE);
+                    }
+                    c->blocks[(i * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = b;
+                }
             }
         }
     }
