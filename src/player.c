@@ -53,7 +53,7 @@ int raycast_break(player * p, chunk ** final_chunk){
 }
 
 // Return the index of the block to the side of the block hitten and fill the final chunk with the chunk the block is part of. Also update the direction to the side hit (from the block pov).
-int raycast_adjacent(player * p, chunk ** fianl_chunk, direction *d){
+int raycast_adjacent(player * p, chunk ** final_chunk, direction *d){
     const float step = 0.05f;
     vec3 origin;
     glm_vec3_copy(p->cam->cameraPos, origin);
@@ -88,7 +88,7 @@ int raycast_adjacent(player * p, chunk ** fianl_chunk, direction *d){
         current_pos[2] = chunk_norm_pos_z(current_chunk, current_pos[2]);
 
         if (chunk_is_pos_inside_block(current_chunk, current_pos)){
-            *fianl_chunk = current_chunk;
+            *final_chunk = current_chunk;
             vec3 previous_pos;
             glm_vec3_sub(current_pos, direction, previous_pos);
             int previous_block_index = chunk_pos_to_index(previous_pos);
@@ -99,7 +99,8 @@ int raycast_adjacent(player * p, chunk ** fianl_chunk, direction *d){
             *d = direction_between(block_hit_index, previous_block_index);
 
             if (previous_chunk_crossed){ // it just works
-                *fianl_chunk = world_get_chunk_direction(p->world, current_chunk, *d);
+                *final_chunk = world_get_chunk_direction(p->world, current_chunk, *d);
+                if (final_chunk == NULL) return -1;
                 int displacement = 0;
                 if (*d == NORTH){
                     displacement = CHUNK_LAYER_SIZE;
