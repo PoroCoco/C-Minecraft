@@ -9,13 +9,13 @@
 #include <chunk.h>
 #include <gpu.h>
 #include <hashtable.h>
+#include <fixed_array.h>
 
 
 typedef struct world {
-    // Needs a set somewhere to quickly check if a chunk is cached (retrieve it) or have been generated (load it) or needs to be generated (gen it)
-
     htb *cache;
-    chunk * loaded_chunks[TOTAL_CHUNKS];
+    htb *loaded_chunks_index;
+    fixray * loaded_chunks;
     chunk * center_chunk; // chunk in the center of the loaded world, where the player currently is
 } world;
 

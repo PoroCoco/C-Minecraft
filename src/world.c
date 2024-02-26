@@ -10,11 +10,10 @@
 world * world_init(){
     world * w = malloc(sizeof(*w));
     assert(w);
-    size_t index = 0;
+    w->loaded_chunks = fixray_init(TOTAL_CHUNKS);
     for (int z = -RENDER_DISTANCE/2 ; z < RENDER_DISTANCE/2 ; z++){
         for (int x = -RENDER_DISTANCE/2;  x < RENDER_DISTANCE/2; x++){
-            w->loaded_chunks[index] = chunk_init(x, z);
-            index++;
+            fixray_add(w->loaded_chunks, chunk_init(x, z));
         }
     }
 
@@ -129,6 +128,7 @@ void world_update_discarded(world * w, chunk ** discarded){
     int index = 0;
     while(discarded[index] != NULL){
         chunk *c = discarded[index];
+        fixray_remove_element(w->loaded_chunks, c);
         if (!chunk_in_cache(w, c)){
             world_append_chunk_cache(w, c);
         }
@@ -136,9 +136,10 @@ void world_update_discarded(world * w, chunk ** discarded){
 
         index++;
     }
+    printf("Discarded %d chunks\n", index);
 }
 
-
+// Thread function
 void world_acquire_chunk(){
 
     return ;
@@ -151,70 +152,55 @@ void world_update_acquired(world * w, int *acquired){
         x = acquired[index*2 + 0];
         z = acquired[index*2 + 1];
         if (chunk_in_cache_pos(w, x, z)){
-            w->loaded_chunks[index] = world_get_chunk_cache(w, x, z);
-            assert(w->loaded_chunks[index]);
+            chunk *cached_chunk = world_get_chunk_cache(w, x, z);
+            fixray_add(w->loaded_chunks, cached_chunk);
         }else{
-            w->loaded_chunks[index] = chunk_init(x, z);
+            chunk *generated_chunk = chunk_init(x, z);
+            fixray_add(w->loaded_chunks, generated_chunk);
         }
         // Add to gpu
 
         index++;
     }
+    printf("Acquired %d\n", index);
 }
 
 bool chunk_in_range(chunk *c, int center_x, int center_z){
     return (c->x >= (center_x - (RENDER_DISTANCE/2)) &&
             c->z >= (center_z - (RENDER_DISTANCE/2)) &&
             c->x < (center_x + (RENDER_DISTANCE/2)) &&
-            c->z < (center_z + (RENDER_DISTANCE/2))
-           );
+            c->z < (center_z + (RENDER_DISTANCE/2)));
 }
 
 bool world_update_position(world * w, float x, float z){
     int new_center_x = ((int)x) / CHUNK_X_SIZE + (x<0.0 ? -1 : 0);
     int new_center_z = ((int)z) / CHUNK_Z_SIZE + (z<0.0 ? -1 : 0);
     size_t discard_index = 0;
-    static chunk * discarded[TOTAL_CHUNKS+1];
-    static int acquired[TOTAL_CHUNKS*2+1]; //x0,y0,x1,y1
-
+    static chunk * discarded[TOTAL_CHUNKS+1]; // NULL terminated
+    discarded[0] = NULL;
+    static int acquired[TOTAL_CHUNKS*2+1]; //x0,y0,x1,y1 INT_MAX terminated;
+    acquired[0] = INT_MAX;
     // If we switched chunks
     if (new_center_x != w->center_chunk->x || new_center_z != w->center_chunk->z){
         printf("new center chunk %d,%d (previous %d,%d)\n", new_center_x, new_center_z, w->center_chunk->x, w->center_chunk->z);
-        int index = 0;
-        for (size_t i = 0; i < TOTAL_CHUNKS; i++){
-            // if (chunk_in_range(w->loaded_chunks[i], new_center_x, new_center_z)){
-                // continue;
-            // }else{
-                discarded[discard_index++] = w->loaded_chunks[i];
-            // }
+        
+        // Find the chunks that were discarded 
+        // ToDo : just like the acquired chunks this could be computed by a function instead of looping
+        for (size_t i = 0; i < TOTAL_CHUNKS; i++){//Todo : for each fixray
+            if (w->loaded_chunks->container[i] != _fixray_null){
+                chunk *c = w->loaded_chunks->container[i];
+                if (!chunk_in_range(c, new_center_x, new_center_z)){
+                    discarded[discard_index++] = c;
+                }
+            }
         }
         discarded[discard_index] = NULL;
-        world_update_discarded(w, discarded);
+        world_compute_acquired_chunks(w->center_chunk->x, new_center_x, w->center_chunk->z, new_center_z, acquired);
 
-        // world_compute_acquired_chunks(w->center_chunk->x, w->center_chunk->z, new_center_x, new_center_z, acquired);
-        world_compute_chunk_in_range(new_center_x, new_center_z, acquired);
+        world_update_discarded(w, discarded);
         world_update_acquired(w, acquired);
 
 
-        // chunk * chunk;
-        // for (int z = -RENDER_DISTANCE/2 ; z < RENDER_DISTANCE/2 ; z++){
-        //     for (int x = -RENDER_DISTANCE/2;  x < RENDER_DISTANCE/2; x++){
-        //         chunk = w->loaded_chunks[index];
-        //         // Put old chunk in the cache
-        //         if (!chunk_in_cache(w, chunk->x, chunk->z)){
-        //             world_append_chunk_cache(w, chunk);
-        //         }
-
-        //         // Get new chunk from cache or generate it
-        //         if (chunk_in_cache(w, x + new_center_x, z + new_center_z)){
-        //             w->loaded_chunks[index] = world_get_chunk_cache(w, x + new_center_x, z + new_center_z);
-        //             assert(w->loaded_chunks[index]);
-        //         }else{
-        //             w->loaded_chunks[index] = chunk_init(x + new_center_x, z + new_center_z);
-        //         }
-        //         index++;
-        //     }
-        // }
         w->center_chunk = world_get_loaded_chunk(w, new_center_x, new_center_z);
         assert(w->center_chunk);
         printf("chunk cache bucket used %zu, total entries %zu\n", w->cache->used_buckets, w->cache->total_entries);
@@ -224,9 +210,13 @@ bool world_update_position(world * w, float x, float z){
 }
 
 chunk * world_get_loaded_chunk(world *w, int x, int z){
+    //Todo : for each fixray
     for (size_t i = 0; i < TOTAL_CHUNKS; i++){
-        if (w->loaded_chunks[i] != NULL && w->loaded_chunks[i]->x == x && w->loaded_chunks[i]->z == z){
-            return w->loaded_chunks[i];
+        if (w->loaded_chunks->container[i] != _fixray_null){
+            chunk * c = w->loaded_chunks->container[i];
+            if (c->x == x && c->z == z){
+                return c;
+            }
         }
     }
 
@@ -256,9 +246,14 @@ void world_load_chunk(world * w, int x, int z);
 void world_unload_chunk(world * w, int x, int z);
 
 void world_cleanup(world * w){
+    //Todo : for each fixray
     for (size_t i = 0; i < TOTAL_CHUNKS; i++){
-        chunk_cleanup(w->loaded_chunks[i]);
+        if( w->loaded_chunks->container[i] != _fixray_null){
+            chunk * c = w->loaded_chunks->container[i];
+            chunk_cleanup(c);
+        }
     }
+
     htb_cleanup(w->cache, (void (*)(void*))chunk_cleanup);
 
     free(w);

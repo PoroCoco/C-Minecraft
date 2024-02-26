@@ -21,8 +21,8 @@
 #endif
 
 
-#define WIDTH 1920
-#define HEIGHT 1080
+#define WIDTH 2300
+#define HEIGHT 1200
 
 
 static const float vertices_face_south[] = {
@@ -76,22 +76,25 @@ static const mat4 rotation_matrix[6] = {
 
 // ToDo: Opti -> use subdata or even map it instead +  Check between static and dynamic perf for the buffer data
 void regen_world_vertices(world *w, unsigned int *VAO, unsigned int *IBA, unsigned int *instances_count, atlas * atlas, bool forced){
-    for (int i = 0; i < TOTAL_CHUNKS; i++){
-        // Updating the IBA 
-        if (w->loaded_chunks[i]->faces_dirty || w->loaded_chunks[i]->textures_dirty || w->loaded_chunks[i]->rotations_dirty || forced){
-        DEBUG_GL(glBindVertexArray(VAO[i]));
-        DEBUG_GL(glBindBuffer(GL_ARRAY_BUFFER, IBA[i]));
-        float * instaces_offsets = chunk_get_faces_offsets(w->loaded_chunks[i], &(instances_count[i]));
-        assert(MAX_FACE_IN_CHUNK > instances_count[i]); // Need to increase the max face per chunk
-        DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float)*3*instances_count[i], instaces_offsets));
+    for (size_t i = 0; i < TOTAL_CHUNKS; i++){// ToDo : fixray for each
+        if( w->loaded_chunks->container[i] != _fixray_null){
+            chunk * c = w->loaded_chunks->container[i];
+            // Updating the IBA 
+            if (c->faces_dirty || c->textures_dirty || c->rotations_dirty || forced){
+            DEBUG_GL(glBindVertexArray(VAO[i]));
+            DEBUG_GL(glBindBuffer(GL_ARRAY_BUFFER, IBA[i]));
+            float * instaces_offsets = chunk_get_faces_offsets(c, &(instances_count[i]));
+            assert(MAX_FACE_IN_CHUNK > instances_count[i]); // Need to increase the max face per chunk
+            DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float)*3*instances_count[i], instaces_offsets));
 
-        float * textures_start = chunk_get_textures(w->loaded_chunks[i], &(instances_count[i]), atlas);
-        assert(MAX_FACE_IN_CHUNK > instances_count[i]); // Need to increase the max face per chunk
-        DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*MAX_FACE_IN_CHUNK*3, sizeof(float)*2*instances_count[i], textures_start));
+            float * textures_start = chunk_get_textures(c, &(instances_count[i]), atlas);
+            assert(MAX_FACE_IN_CHUNK > instances_count[i]); // Need to increase the max face per chunk
+            DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*MAX_FACE_IN_CHUNK*3, sizeof(float)*2*instances_count[i], textures_start));
 
-        float * rotations_values = chunk_get_rotations_values(w->loaded_chunks[i], &(instances_count[i]));
-        assert(MAX_FACE_IN_CHUNK > instances_count[i]); // Need to increase the max face per chunk
-        DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*MAX_FACE_IN_CHUNK*5, sizeof(float)*1*instances_count[i], rotations_values));
+            float * rotations_values = chunk_get_rotations_values(c, &(instances_count[i]));
+            assert(MAX_FACE_IN_CHUNK > instances_count[i]); // Need to increase the max face per chunk
+            DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*MAX_FACE_IN_CHUNK*5, sizeof(float)*1*instances_count[i], rotations_values));
+            }
         }
     }
 }
@@ -250,17 +253,20 @@ int main(int argc, char const *argv[])
         float time_misc = (float)glfwGetTime() - tmp_misc; 
 
         float tmp_draw = (float)glfwGetTime();
-        for (int i = 0 ; i < TOTAL_CHUNKS ; i++){
-            DEBUG_GL(glBindVertexArray(VAO[i]));
-            mat4 model = GLM_MAT4_IDENTITY_INIT;
-            vec3 translate = {(float)(w->loaded_chunks[i]->x) * CHUNK_X_SIZE, (float)0, (float)(w->loaded_chunks[i]->z)*CHUNK_Z_SIZE};
-            glm_translate(model, translate);
-            shader_set_m4(s, "model", model);
+        for (size_t i = 0; i < TOTAL_CHUNKS; i++){// ToDo : fixray for each
+            if( w->loaded_chunks->container[i] != _fixray_null){
+                chunk * c = w->loaded_chunks->container[i];
+                DEBUG_GL(glBindVertexArray(VAO[i]));
+                mat4 model = GLM_MAT4_IDENTITY_INIT;
+                vec3 translate = {(float)(c->x) * CHUNK_X_SIZE, (float)0, (float)(c->z)*CHUNK_Z_SIZE};
+                glm_translate(model, translate);
+                shader_set_m4(s, "model", model);
 
-            // Make chunk fall out of the sky
-            float y_offset = chunk_y_offset_spawn(w->loaded_chunks[i]->view_time);
-            shader_set_float(s, "chunkYOffset", y_offset);
-            DEBUG_GL(glDrawArraysInstanced(GL_TRIANGLES, 0, 6, instances_count[i]));
+                // Make chunk fall out of the sky
+                float y_offset = chunk_y_offset_spawn(c->view_time);
+                shader_set_float(s, "chunkYOffset", y_offset);
+                DEBUG_GL(glDrawArraysInstanced(GL_TRIANGLES, 0, 6, instances_count[i]));
+            }
         }
         
         glfwSwapBuffers(window);
@@ -268,7 +274,7 @@ int main(int argc, char const *argv[])
         glFinish();
         float time_draw = (float)glfwGetTime() - tmp_draw;
         frame_count++;
-        // printf("Frame time : %f (regen : %f, draw %f, world %f, misc %f)\n", delta_time, time_regen, time_draw, time_world_update, time_misc);
+        printf("Frame time : %f (regen : %f, draw %f, world %f, misc %f)\n", delta_time, time_regen, time_draw, time_world_update, time_misc);
     }
 
     DEBUG_GL(glDeleteVertexArrays(TOTAL_CHUNKS, VAO));
