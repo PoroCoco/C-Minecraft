@@ -175,7 +175,7 @@ bool world_update_position(world * w, float x, float z){
 
     // get last chunk
     int count = 0;
-    while (!queue_is_empty(w->chunk_to_acquire) && count < 5){
+    while (!queue_is_empty(w->chunk_to_acquire) && count < CHUNK_LOAD_PER_FRAME){
         int x = (int)queue_dequeue(w->chunk_to_acquire);
         int z = (int)queue_dequeue(w->chunk_to_acquire);
         if (x >= (new_center_x - (RENDER_DISTANCE/2)) &&
