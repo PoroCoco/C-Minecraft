@@ -27,4 +27,4 @@ void fixray_remove_from_index(fixray * fa, uint64_t index);
 void fixray_remove_element(fixray * fa, void * element);
 bool fixray_exist(fixray *fa, void* element);
 
-void fixray_cleanup(fixray * fa, void free_element(void*));
+void fixray_cleanup(fixray * fa);
