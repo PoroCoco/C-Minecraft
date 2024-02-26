@@ -24,16 +24,6 @@
 #define WIDTH 2300
 #define HEIGHT 1200
 
-
-static const float vertices_face_south[] = {
-    0.f, 0.f,  1.f,  0.0f, 0.0f,
-    1.f, 0.f,  1.f,  ATLAS_STEP, 0.0f,
-    1.f,  1.f,  1.f,  ATLAS_STEP, ATLAS_STEP,
-    1.f,  1.f,  1.f,  ATLAS_STEP, ATLAS_STEP,
-    0.f,  1.f,  1.f,  0.0f, ATLAS_STEP,
-    0.f, 0.f,  1.f,  0.0f, 0.0f,
-};
-
 // ToDo : Could be mat3 
 static const mat4 rotation_matrix[6] = {
     {   // Top : 90 around X
@@ -74,31 +64,6 @@ static const mat4 rotation_matrix[6] = {
     }
 };
 
-// ToDo: Opti -> use subdata or even map it instead +  Check between static and dynamic perf for the buffer data
-void regen_world_vertices(world *w, unsigned int *VAO, unsigned int *IBA, unsigned int *instances_count, atlas * atlas, bool forced){
-    for (size_t i = 0; i < TOTAL_CHUNKS; i++){// ToDo : fixray for each
-        if( w->loaded_chunks->container[i] != _fixray_null){
-            chunk * c = w->loaded_chunks->container[i];
-            // Updating the IBA 
-            if (c->faces_dirty || c->textures_dirty || c->rotations_dirty || forced){
-            DEBUG_GL(glBindVertexArray(VAO[i]));
-            DEBUG_GL(glBindBuffer(GL_ARRAY_BUFFER, IBA[i]));
-            float * instaces_offsets = chunk_get_faces_offsets(c, &(instances_count[i]));
-            assert(MAX_FACE_IN_CHUNK > instances_count[i]); // Need to increase the max face per chunk
-            DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float)*3*instances_count[i], instaces_offsets));
-
-            float * textures_start = chunk_get_textures(c, &(instances_count[i]), atlas);
-            assert(MAX_FACE_IN_CHUNK > instances_count[i]); // Need to increase the max face per chunk
-            DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*MAX_FACE_IN_CHUNK*3, sizeof(float)*2*instances_count[i], textures_start));
-
-            float * rotations_values = chunk_get_rotations_values(c, &(instances_count[i]));
-            assert(MAX_FACE_IN_CHUNK > instances_count[i]); // Need to increase the max face per chunk
-            DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*MAX_FACE_IN_CHUNK*5, sizeof(float)*1*instances_count[i], rotations_values));
-            }
-        }
-    }
-}
-
 float chunk_y_offset_spawn(float chunk_time){
     const static float fall_time = 1.0f;
     float current_time = (float)glfwGetTime();
@@ -110,68 +75,17 @@ float chunk_y_offset_spawn(float chunk_time){
 int main(int argc, char const *argv[])
 {
     srand(654);
-    world * w = world_init();
     camera * cam = camera_init();
-    player * player = player_init(cam, w);
+    GLFWwindow* window = window_init(WIDTH, HEIGHT, cam);
     atlas * atlas = atlas_init(ATLAS_RESOLUTION);
-    gpu *g = gpu_init();
-    GLFWwindow* window = window_init(WIDTH, HEIGHT, cam, player);
-
-    // GLAD init
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
-        fprintf(stderr, "Failed to initialize GLAD\n");
-        return -1;
-    }    
+    gpu * gpu = gpu_init(atlas);;
+    world * w = world_init(gpu);
+    player * player = player_init(cam, w);
+    window_data * window_data = glfwGetWindowUserPointer(window);
+    window_data->player = player;
 
     shader *s = shader_init("../shaders/shader.vert", "../shaders/shader.frag");
     
-    // Create the VAO
-    unsigned int VAO[TOTAL_CHUNKS];
-    DEBUG_GL(glGenVertexArrays(TOTAL_CHUNKS, VAO));
-
-    // Create the VBO 
-    unsigned int VBO_face;
-    DEBUG_GL(glGenBuffers(1, &VBO_face));
-
-    for (size_t i = 0; i < TOTAL_CHUNKS; i++){
-        DEBUG_GL(glBindVertexArray(VAO[i]));
-        glBindBuffer(GL_ARRAY_BUFFER, VBO_face);
-        // Upload the data for a face
-        DEBUG_GL(glBufferData(GL_ARRAY_BUFFER, sizeof(float)*ATTRIBUTE_PER_VERTEX*6, vertices_face_south, GL_STATIC_DRAW)); 
-        // setting its attributes
-        DEBUG_GL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, ATTRIBUTE_PER_VERTEX * sizeof(float), (void*)0));
-        DEBUG_GL(glEnableVertexAttribArray(0));
-        DEBUG_GL(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, ATTRIBUTE_PER_VERTEX * sizeof(float), (void*)(3 * sizeof(float))));
-        DEBUG_GL(glEnableVertexAttribArray(1));
-    }
-
-    // Create the instanced array for coordinates
-    const unsigned int attribute_per_instance = 6; // x,y,z; texturex,texturey; position_index;
-    // Instances Buffer Attributes
-    unsigned int IBA[TOTAL_CHUNKS];
-    DEBUG_GL(glGenBuffers(TOTAL_CHUNKS, IBA));
-    for (size_t i = 0; i < TOTAL_CHUNKS; i++)
-    {
-        DEBUG_GL(glBindVertexArray(VAO[i]));
-        glBindBuffer(GL_ARRAY_BUFFER, IBA[i]);
-        // Pre-Allocate the buffer
-        DEBUG_GL(glBufferData(GL_ARRAY_BUFFER, MAX_FACE_IN_CHUNK * sizeof(float) * attribute_per_instance, NULL, GL_STATIC_DRAW)); 
-        DEBUG_GL(glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0));
-        DEBUG_GL(glEnableVertexAttribArray(2));
-        DEBUG_GL(glVertexAttribDivisor(2, 1));
-        DEBUG_GL(glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)(3 * MAX_FACE_IN_CHUNK * sizeof(float))));
-        DEBUG_GL(glEnableVertexAttribArray(3));
-        DEBUG_GL(glVertexAttribDivisor(3, 1));
-        DEBUG_GL(glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, 1 * sizeof(int), (void*)(5 * MAX_FACE_IN_CHUNK * sizeof(float))));
-        DEBUG_GL(glEnableVertexAttribArray(4));
-        DEBUG_GL(glVertexAttribDivisor(4, 1));
-    }
-
-    unsigned int instances_count[TOTAL_CHUNKS];
-
-    printf("VBO binded\n");
-
     // Texture loading and generation
     stbi_set_flip_vertically_on_load(true);  
     unsigned int texture1;
@@ -213,7 +127,6 @@ int main(int argc, char const *argv[])
     // Wireframe
     // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
     printf("starting render loop\n");
-    regen_world_vertices(w, VAO, IBA, instances_count, atlas, true);
     while(!window_should_close(window))
     {
         float time_frame_begin = (float)glfwGetTime();
@@ -230,13 +143,12 @@ int main(int argc, char const *argv[])
         if (world_update_position(w, cam->cameraPos[0], cam->cameraPos[2])){
             time_world_update = (float)glfwGetTime() - tmp_world_update;
             tmp_regen = (float)glfwGetTime();
-            regen_world_vertices(w, VAO, IBA, instances_count, atlas, true);
 
         }else{
             time_world_update = (float)glfwGetTime() - tmp_world_update;
         }
         if (tmp_regen == 0.0f) tmp_regen = (float)glfwGetTime();
-        regen_world_vertices(w, VAO, IBA, instances_count, atlas, false);
+        world_send_update(w);
         time_regen = (float)glfwGetTime() - tmp_regen;
 
         float tmp_misc = (float)glfwGetTime();
@@ -256,7 +168,6 @@ int main(int argc, char const *argv[])
         for (size_t i = 0; i < TOTAL_CHUNKS; i++){// ToDo : fixray for each
             if( w->loaded_chunks->container[i] != _fixray_null){
                 chunk * c = w->loaded_chunks->container[i];
-                DEBUG_GL(glBindVertexArray(VAO[i]));
                 mat4 model = GLM_MAT4_IDENTITY_INIT;
                 vec3 translate = {(float)(c->x) * CHUNK_X_SIZE, (float)0, (float)(c->z)*CHUNK_Z_SIZE};
                 glm_translate(model, translate);
@@ -265,7 +176,7 @@ int main(int argc, char const *argv[])
                 // Make chunk fall out of the sky
                 float y_offset = chunk_y_offset_spawn(c->view_time);
                 shader_set_float(s, "chunkYOffset", y_offset);
-                DEBUG_GL(glDrawArraysInstanced(GL_TRIANGLES, 0, 6, instances_count[i]));
+                gpu_draw(gpu, i);
             }
         }
         
@@ -277,13 +188,10 @@ int main(int argc, char const *argv[])
         printf("Frame time : %f (regen : %f, draw %f, world %f, misc %f)\n", delta_time, time_regen, time_draw, time_world_update, time_misc);
     }
 
-    DEBUG_GL(glDeleteVertexArrays(TOTAL_CHUNKS, VAO));
-    DEBUG_GL(glDeleteBuffers(1, &VBO_face));
-    DEBUG_GL(glDeleteBuffers(TOTAL_CHUNKS, IBA));
     shader_cleanup(s);
     camera_cleanup(cam);
     atlas_cleanup(atlas);
-    gpu_cleanup(g);
+    gpu_cleanup(gpu);
 
     window_cleanup(window);
     return 0;

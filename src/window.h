@@ -13,7 +13,8 @@ typedef struct window_data {
     bool mouse_first;
 } window_data;
 
-GLFWwindow* window_init(int width, int height, camera * c, player * player);
+// Add player to struct field
+GLFWwindow* window_init(int width, int height, camera * c);
 
 bool window_should_close();
 

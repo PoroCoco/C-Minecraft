@@ -7,13 +7,16 @@
 
 #include <world.h>
 
-world * world_init(){
+world * world_init(gpu * gpu){
     world * w = malloc(sizeof(*w));
     assert(w);
+    w->gpu = gpu;
     w->loaded_chunks = fixray_init(TOTAL_CHUNKS);
     for (int z = -RENDER_DISTANCE/2 ; z < RENDER_DISTANCE/2 ; z++){
         for (int x = -RENDER_DISTANCE/2;  x < RENDER_DISTANCE/2; x++){
-            fixray_add(w->loaded_chunks, chunk_init(x, z));
+            chunk * c = chunk_init(x, z);
+            uint64_t chunk_index = fixray_add(w->loaded_chunks, c);
+            gpu_upload(w->gpu, chunk_index, c);
         }
     }
 
@@ -122,17 +125,17 @@ void world_compute_acquired_chunks(int old_x, int new_x, int old_z, int new_z, i
     }
 }
 
-
-
 void world_update_discarded(world * w, chunk ** discarded){
     int index = 0;
     while(discarded[index] != NULL){
         chunk *c = discarded[index];
-        fixray_remove_element(w->loaded_chunks, c);
+        uint64_t chunk_index = fixray_get_index(w->loaded_chunks, c);
+        fixray_remove_from_index(w->loaded_chunks, chunk_index);
+
+        gpu_unload(w->gpu, chunk_index);
         if (!chunk_in_cache(w, c)){
             world_append_chunk_cache(w, c);
         }
-        // Remove from gpu
 
         index++;
     }
@@ -151,15 +154,15 @@ void world_update_acquired(world * w, int *acquired){
         // create thread that create the chunk
         x = acquired[index*2 + 0];
         z = acquired[index*2 + 1];
+        chunk * c;
         if (chunk_in_cache_pos(w, x, z)){
-            chunk *cached_chunk = world_get_chunk_cache(w, x, z);
-            fixray_add(w->loaded_chunks, cached_chunk);
+            c = world_get_chunk_cache(w, x, z);
         }else{
-            chunk *generated_chunk = chunk_init(x, z);
-            fixray_add(w->loaded_chunks, generated_chunk);
+            c = chunk_init(x, z);
         }
+        uint64_t chunk_index = fixray_add(w->loaded_chunks, c);
         // Add to gpu
-
+        gpu_upload(w->gpu, chunk_index, c);
         index++;
     }
     printf("Acquired %d\n", index);
@@ -223,6 +226,21 @@ chunk * world_get_loaded_chunk(world *w, int x, int z){
     fprintf(stderr, "Tried to get a loaded chunk that wasn't loaded : %d,%d\n", x, z);
     return NULL;
 }
+
+// ask the gpu to upload the updated state of each chunk
+void world_send_update(world *w){
+    // Todo : add a stack to world and when a chunk is modified in world, in add the index to the stack, then on update empties stack and update each chunk to the gpu;
+    for (size_t i = 0; i < TOTAL_CHUNKS; i++){// ToDo : fixray for each
+        if (w->loaded_chunks->container[i] != _fixray_null){
+            chunk * c = w->loaded_chunks->container[i];
+            if (c->faces_dirty || c->faces_dirty || c->rotations_dirty){
+                uint64_t chunk_index = fixray_get_index(w->loaded_chunks, c);
+                gpu_upload(w->gpu, chunk_index, c);
+            }
+        }
+    }
+}
+
 
 chunk * world_get_chunk_direction(world *w, chunk const * c, direction d){
     switch (d)

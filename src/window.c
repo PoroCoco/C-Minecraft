@@ -45,11 +45,12 @@ void window_process_input(GLFWwindow *window, float delta_time)
     camera_process_input(w->cam, window, delta_time);
 }
 
-GLFWwindow* window_init(int width, int height, camera * c, player * player){
+GLFWwindow* window_init(int width, int height, camera * c){
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
 
     GLFWwindow* window = glfwCreateWindow(width, height, "OpenGL Window", NULL, NULL);
     if (window == NULL){
@@ -64,7 +65,7 @@ GLFWwindow* window_init(int width, int height, camera * c, player * player){
     assert(w_data);
     w_data->cam = c;
     w_data->mouse_first = true;
-    w_data->player = player;
+    w_data->player = NULL;
     glfwSetWindowUserPointer(window, w_data);
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);

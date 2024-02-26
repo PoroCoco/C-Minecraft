@@ -24,6 +24,9 @@
 
 #define MAX_FACE_IN_CHUNK 10000
 
+#define RENDER_DISTANCE 16*2
+#define TOTAL_CHUNKS (RENDER_DISTANCE*RENDER_DISTANCE)
+
 typedef struct chunk {
     int x; 
     int z;
