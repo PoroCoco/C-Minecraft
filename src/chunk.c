@@ -84,7 +84,7 @@ void add_face_vertices(float * vertex_data, direction d, int face_count){
         break;
     }
 
-    memcpy(vertex_data + (face_count * FACE_FLOAT_COUNT), face_vertex, FACE_BYTES);
+    memcpy(vertex_data + (face_count * 3 * 4), face_vertex, 3 * 4 * sizeof(float));
 }
 
 
@@ -269,6 +269,29 @@ bool chunk_is_solid_direction(chunk const * c, int block_index, direction d){
     return c->blocks[block_index + direction_step_value(d)].is_solid;
 }
 
+void chunk_generate_tree(chunk *c, int x, int z, int y){
+    int tree_height = 5;    
+    for (size_t i = 0; i < tree_height; i++){
+        c->blocks[((i+y) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = block_create(BLOCK_WOOD);
+        if (i>2){
+            for (direction d = DIR_START; d < DIR_COUNT; d++){
+                if (d == BOTTOM || d == TOP) continue;
+                int tree_trunk_pos = ((i+y) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x;
+                int leaf_pos = tree_trunk_pos + direction_step_value(d);
+                c->blocks[leaf_pos] = block_create(BLOCK_LEAF);
+            }
+        }
+    }
+    c->blocks[((tree_height+y) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = block_create(BLOCK_LEAF);
+    for (direction d = DIR_START; d < DIR_COUNT; d++){
+        if (d == BOTTOM || d == TOP) continue;
+        int tree_trunk_pos = ((tree_height+y) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x;
+        int leaf_pos = tree_trunk_pos + direction_step_value(d);
+        c->blocks[leaf_pos] = block_create(BLOCK_LEAF);
+    }
+    c->blocks[((tree_height+y+1) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = block_create(BLOCK_LEAF);
+}
+
 chunk * chunk_init(int x, int z){
     chunk * c = malloc(sizeof(*c));
     assert(c);
@@ -279,18 +302,18 @@ chunk * chunk_init(int x, int z){
         c->blocks[i] = block_create(BLOCK_AIR);
     }
 
-    // printf("init chunk %d,%d\n", x, z);
+    printf("init chunk %d,%d\n", x, z);
     for (int z = 0; z < CHUNK_Z_SIZE; z++){
         for (int x = 0; x < CHUNK_X_SIZE; x++){
             float noise_value = get_noise(x + c->x*CHUNK_X_SIZE , z+ c->z*CHUNK_Z_SIZE);
             int height = (int)((CHUNK_Y_SIZE - 15) * (noise_value));
             if (height < 30){
-                int new_height = 30;
-                for (int i = new_height - 1; i > 0 ; i--){
+                height = 30;
+                for (int i = height - 1; i > 0 ; i--){
                     block b;
-                    if ((new_height-i) < 30){
+                    if ((height-i) < 30){
                         b = block_create(BLOCK_WATER);
-                    }else if ((new_height-i) < new_height){
+                    }else if ((height-i) < height){
                         b = block_create(BLOCK_STONE);
                     }
                     c->blocks[(i * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = b;
@@ -305,8 +328,15 @@ chunk * chunk_init(int x, int z){
                     }
                     c->blocks[(i * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = b;
                 }
+                float tree_noise = get_noise_tree(x + c->x*CHUNK_X_SIZE , z+ c->z*CHUNK_Z_SIZE);
+                printf("%f\t", tree_noise);
+                if (tree_noise > 0.85){ 
+                    chunk_generate_tree(c, x, z, height);               
+                } 
             }
+            
         }
+        printf("\n");
     }
     // c->blocks[0] = block_create(BLOCK_DIRT);
     c->view_time = (float)glfwGetTime();

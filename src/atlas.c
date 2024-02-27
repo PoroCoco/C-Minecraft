@@ -9,8 +9,10 @@
 const int TEXTURE_BLOCKS[] = {
     //TOP   BOT     NORTH   SOUTH   EAST    WEST
     1,      0,      2,      2,      2,      2,      // DIRT
-    3,      3,      3,      3,      3,      3,      // STONE
-    16,      16,      16,      16,      16,      16,      // WATER
+    3,      3,      3,      3,      3,      3,          // STONE
+    16,      16,      16,      16,      16,      16,    // WATER
+    32,      32,      32,      32,      32,      32,    // WOOD
+    33,      33,      33,      33,      33,      33,    // LEAF
 };
 
 

@@ -8,6 +8,8 @@ typedef enum block_id {
     BLOCK_DIRT = 0,
     BLOCK_STONE,
     BLOCK_WATER,
+    BLOCK_WOOD,
+    BLOCK_LEAF,
     BLOCK_COUNT
 } block_id;
 
