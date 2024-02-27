@@ -18,10 +18,16 @@ typedef struct gpu {
     atlas * atlas;
 
     // OpenGL Objects
+    // Chunks
     uint32_t VAO[TOTAL_CHUNKS];
     uint32_t VBO_face;
     uint32_t IBA[TOTAL_CHUNKS];   // Instance Buffer Attributes
     uint32_t instances_count[TOTAL_CHUNKS];
+
+    // Skybox
+    uint32_t skybox_vao;
+    uint32_t skybox_vbo;
+    uint32_t skybox_cubemap_texture;
 } gpu;
 
 gpu * gpu_init(atlas* atlas);

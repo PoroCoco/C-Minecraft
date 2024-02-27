@@ -85,6 +85,7 @@ int main(int argc, char const *argv[])
     window_data->player = player;
 
     shader *s = shader_init("../shaders/shader.vert", "../shaders/shader.frag");
+    shader *skybox = shader_init("../shaders/skybox.vert", "../shaders/skybox.frag");
     
     // Texture loading and generation
     stbi_set_flip_vertically_on_load(true);  
@@ -164,6 +165,7 @@ int main(int argc, char const *argv[])
         shader_set_rotation_matrices(s, "rotationMatrices", (float (*)[4][4])rotation_matrix);
         float time_misc = (float)glfwGetTime() - tmp_misc; 
 
+        // Render each chunk
         float tmp_draw = (float)glfwGetTime();
         for (size_t i = 0; i < TOTAL_CHUNKS; i++){// ToDo : fixray for each
             if( w->loaded_chunks->container[i] != _fixray_null){
@@ -178,6 +180,20 @@ int main(int argc, char const *argv[])
                 shader_set_float(s, "chunkYOffset", y_offset);
                 gpu_draw(gpu, i);
             }
+        }
+        // Render the skybox
+        {
+            glDepthMask(GL_FALSE);
+            shader_use(skybox);
+            mat4 view_skybox = GLM_MAT4_ZERO_INIT;
+            glm_mat4_copy(cam->view, view_skybox);
+            view_skybox[3][3] = 1.f;
+            shader_set_m4(skybox, "view", view_skybox);
+            shader_set_m4(skybox, "projection", projection);
+            glBindVertexArray(gpu->skybox_vao);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, gpu->skybox_cubemap_texture);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+            glDepthMask(GL_TRUE);
         }
         
         glfwSwapBuffers(window);

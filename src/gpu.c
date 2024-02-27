@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <assert.h>
 #include <gpu.h>
+#include <stb_image.h>
 
 static const float vertices_face_south[] = {
     0.f, 0.f,  1.f,  0.0f, 0.0f,
@@ -11,6 +12,102 @@ static const float vertices_face_south[] = {
     0.f,  1.f,  1.f,  0.0f, ATLAS_STEP,
     0.f, 0.f,  1.f,  0.0f, 0.0f,
 };
+
+float skybox_vertices[] = {
+    // positions          
+    -1.0f,  1.0f, -1.0f,
+    -1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+    -1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f
+};
+
+const char * cubemap_faces_name[] = {
+    "../textures/skybox/right.jpg",
+    "../textures/skybox/left.jpg",
+    "../textures/skybox/top.jpg",
+    "../textures/skybox/bottom.jpg",
+    "../textures/skybox/front.jpg",
+    "../textures/skybox/back.jpg",
+};
+
+
+void gpu_init_skybox(gpu * gpu){
+    DEBUG_GL(glGenVertexArrays(1, &gpu->skybox_vao));
+    DEBUG_GL(glGenBuffers(1, &gpu->skybox_vbo));
+
+    DEBUG_GL(glBindVertexArray(gpu->skybox_vao));
+    DEBUG_GL(glBindBuffer(GL_ARRAY_BUFFER, gpu->skybox_vbo));
+
+    DEBUG_GL(glBufferData(GL_ARRAY_BUFFER, sizeof(float)*3*6*6, skybox_vertices, GL_STATIC_DRAW)); 
+    // setting its attributes
+    DEBUG_GL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0));
+    DEBUG_GL(glEnableVertexAttribArray(0));
+
+}
+
+void gpu_load_cubemap(gpu * gpu){
+    glGenTextures(1, &gpu->skybox_cubemap_texture);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, gpu->skybox_cubemap_texture);
+
+    uint32_t cubemap_faces = 6;
+    int32_t width, height, nrChannels;
+    for (uint32_t i = 0; i < cubemap_faces; i++)
+    {
+        unsigned char *data = stbi_load(cubemap_faces_name[i], &width, &height, &nrChannels, 0);
+        if (data){
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
+                         0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+            );
+            stbi_image_free(data);
+        }else{
+            fprintf(stderr, "Cubemap tex failed to load at path: %s\n", cubemap_faces_name[i]);
+            stbi_image_free(data);
+        }
+    }
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+}
 
 gpu * gpu_init(atlas * atlas){
     gpu *gpu = malloc(sizeof(*gpu));
@@ -64,6 +161,10 @@ gpu * gpu_init(atlas * atlas){
         DEBUG_GL(glVertexAttribDivisor(4, 1));
     }
 
+
+    // skybox init
+    gpu_load_cubemap(gpu);
+    gpu_init_skybox(gpu);
 
     printf("OpenGL Objects creation successful\n");
     return gpu;
