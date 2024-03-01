@@ -26,12 +26,12 @@ int raycast_break(player * p, chunk ** final_chunk){
     current_pos[2] = chunk_norm_pos_z(current_chunk, current_pos[2]);
     for (float distance = 0.0; distance < PLAYER_RANGE; distance += step){
         // Update the current chunk
-        if (current_pos[0] >= (float)(CHUNK_X_SIZE)){
+        if (current_pos[0] > (float)(CHUNK_X_SIZE)){
             current_chunk = world_get_chunk_direction(p->world, current_chunk, EAST);
         }else if (current_pos[0] < 0.0){
             current_chunk = world_get_chunk_direction(p->world, current_chunk, WEST);
         }
-        if (current_pos[2] >= (float)(CHUNK_Z_SIZE)){
+        if (current_pos[2] > (float)(CHUNK_Z_SIZE)){
             current_chunk = world_get_chunk_direction(p->world, current_chunk, SOUTH);
         }else if (current_pos[2] < 0.0){
             current_chunk = world_get_chunk_direction(p->world, current_chunk, NORTH);
