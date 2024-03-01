@@ -59,12 +59,12 @@ float skybox_vertices[] = {
 };
 
 const char * cubemap_faces_name[] = {
-    "../textures/skybox/right.jpg",
-    "../textures/skybox/left.jpg",
-    "../textures/skybox/top.jpg",
-    "../textures/skybox/bottom.jpg",
-    "../textures/skybox/front.jpg",
-    "../textures/skybox/back.jpg",
+    "../textures/skybox/space/right.jpg",
+    "../textures/skybox/space/left.jpg",
+    "../textures/skybox/space/top.jpg",
+    "../textures/skybox/space/bottom.jpg",
+    "../textures/skybox/space/front.jpg",
+    "../textures/skybox/space/back.jpg",
 };
 
 
@@ -102,8 +102,8 @@ void gpu_load_cubemap(gpu * gpu){
         }
     }
 
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);

@@ -190,6 +190,10 @@ int main(int argc, char const *argv[])
             view_skybox[3][3] = 1.f;
             shader_set_m4(skybox, "view", view_skybox);
             shader_set_m4(skybox, "projection", projection);
+            mat4 model = GLM_MAT4_IDENTITY_INIT;
+            vec3 translate = {cam->cameraPos[0], (float)cam->cameraPos[1], (float)cam->cameraPos[2]};
+            glm_translate(model, translate);
+            shader_set_m4(skybox, "model", model);
             glBindVertexArray(gpu->skybox_vao);
             glBindTexture(GL_TEXTURE_CUBE_MAP, gpu->skybox_cubemap_texture);
             glDrawArrays(GL_TRIANGLES, 0, 36);
