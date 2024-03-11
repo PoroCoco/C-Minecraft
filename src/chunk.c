@@ -302,7 +302,7 @@ chunk * chunk_init(int x, int z){
         c->blocks[i] = block_create(BLOCK_AIR);
     }
 
-    printf("init chunk %d,%d\n", x, z);
+    // printf("init chunk %d,%d\n", x, z);
     for (int z = 0; z < CHUNK_Z_SIZE; z++){
         for (int x = 0; x < CHUNK_X_SIZE; x++){
             float noise_value = get_noise(x + c->x*CHUNK_X_SIZE , z+ c->z*CHUNK_Z_SIZE);
@@ -329,14 +329,14 @@ chunk * chunk_init(int x, int z){
                     c->blocks[(i * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = b;
                 }
                 float tree_noise = get_noise_tree(x + c->x*CHUNK_X_SIZE , z+ c->z*CHUNK_Z_SIZE);
-                printf("%f\t", tree_noise);
+                // printf("%f\t", tree_noise);
                 if (tree_noise > 0.85){ 
                     chunk_generate_tree(c, x, z, height);               
                 } 
             }
             
         }
-        printf("\n");
+        // printf("\n");
     }
     // c->blocks[0] = block_create(BLOCK_DIRT);
     c->view_time = (float)glfwGetTime();
@@ -349,7 +349,7 @@ chunk * chunk_init(int x, int z){
     c->rotations_values = NULL;
     c->rotations_dirty = true;
     c->rotations_count = 0;
-
+    c->in_frustum = false;
     return c;
 }
 

@@ -7,8 +7,8 @@
 #include <direction.h>
 #include <atlas.h>
 
-#define CHUNK_X_SIZE 16
-#define CHUNK_Z_SIZE 16
+#define CHUNK_X_SIZE 64
+#define CHUNK_Z_SIZE 64
 #define CHUNK_Y_SIZE 128
 #define CHUNK_LAYER_SIZE (CHUNK_X_SIZE * CHUNK_Z_SIZE)
 #define CHUNK_SIZE (CHUNK_LAYER_SIZE * CHUNK_Y_SIZE)
@@ -22,9 +22,9 @@
 // Number of bytes per face
 #define FACE_BYTES (sizeof(float) * FACE_FLOAT_COUNT)
 
-#define MAX_FACE_IN_CHUNK 15000
+#define MAX_FACE_IN_CHUNK 100000
 
-#define RENDER_DISTANCE 16*2
+#define RENDER_DISTANCE 8*2
 #define TOTAL_CHUNKS (RENDER_DISTANCE*RENDER_DISTANCE)
 
 typedef struct chunk {
@@ -43,6 +43,7 @@ typedef struct chunk {
     bool rotations_dirty;
 
     float view_time; // The time when the chunk was loaded/in view
+    bool in_frustum;
 } chunk;
 
 chunk * chunk_init(int x, int y);

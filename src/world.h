@@ -9,7 +9,7 @@
 #include <fixed_array.h>
 #include <queue.h>
 
-#define CHUNK_LOAD_PER_FRAME 5
+#define CHUNK_LOAD_PER_FRAME 1
 
 
 typedef struct world {

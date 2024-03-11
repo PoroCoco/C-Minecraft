@@ -16,6 +16,7 @@
 #include <world.h>
 #include <atlas.h>
 #include <gpu.h>
+#include <frustum.h>
 #ifdef __unix__
 #include <pthread.h>
 #endif
@@ -159,10 +160,14 @@ int main(int argc, char const *argv[])
 
         shader_use(s);
         mat4 projection = GLM_MAT4_IDENTITY_INIT;
-        glm_perspective(glm_rad(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 10000.0f, projection);
+        float fov = 55.0f;
+        glm_perspective(glm_rad(fov), (float)WIDTH / (float)HEIGHT, 0.1f, 10000.0f, projection);
         shader_set_m4(s, "view", cam->view);
         shader_set_m4(s, "projection", projection);
         shader_set_rotation_matrices(s, "rotationMatrices", (float (*)[4][4])rotation_matrix);
+
+        // Applies frustum to world
+        world_update_frustum(w, player, fov, (float)WIDTH / (float)HEIGHT, 0.1f, 10000.0f);
         float time_misc = (float)glfwGetTime() - tmp_misc; 
 
         // Render each chunk
@@ -170,6 +175,7 @@ int main(int argc, char const *argv[])
         for (size_t i = 0; i < TOTAL_CHUNKS; i++){// ToDo : fixray for each
             if( w->loaded_chunks->container[i] != _fixray_null){
                 chunk * c = w->loaded_chunks->container[i];
+                if (c->in_frustum){
                 mat4 model = GLM_MAT4_IDENTITY_INIT;
                 vec3 translate = {(float)(c->x) * CHUNK_X_SIZE, (float)0, (float)(c->z)*CHUNK_Z_SIZE};
                 glm_translate(model, translate);
@@ -179,8 +185,10 @@ int main(int argc, char const *argv[])
                 float y_offset = chunk_y_offset_spawn(c->view_time);
                 shader_set_float(s, "chunkYOffset", y_offset);
                 gpu_draw(gpu, i);
+                }
             }
         }
+        
         // Render the skybox
         {
             glDepthMask(GL_FALSE);
