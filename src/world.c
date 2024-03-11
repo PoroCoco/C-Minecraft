@@ -195,12 +195,9 @@ bool world_update_position(world * w, float x, float z){
     }
 
     // ToDo : just like the acquired chunks this could be computed by a function instead of looping
-    for (size_t i = 0; i < TOTAL_CHUNKS; i++){//Todo : for each fixray
-        if (w->loaded_chunks->container[i] != _fixray_null){
-            chunk *c = w->loaded_chunks->container[i];
-            if (!chunk_in_range(c, new_center_x, new_center_z)){
-                discarded[discard_index++] = c;
-            }
+    fixray_foreach(chunk *c, w->loaded_chunks){
+        if (!chunk_in_range(c, new_center_x, new_center_z)){
+            discarded[discard_index++] = c;
         }
     }
     discarded[discard_index] = NULL;
@@ -226,13 +223,9 @@ bool world_update_position(world * w, float x, float z){
 }
 
 chunk * world_get_loaded_chunk(world *w, int x, int z){
-    //Todo : for each fixray
-    for (size_t i = 0; i < TOTAL_CHUNKS; i++){
-        if (w->loaded_chunks->container[i] != _fixray_null){
-            chunk * c = w->loaded_chunks->container[i];
-            if (c->x == x && c->z == z){
-                return c;
-            }
+    fixray_foreach(chunk *c, w->loaded_chunks){
+        if (c->x == x && c->z == z){
+            return c;
         }
     }
 
@@ -243,13 +236,10 @@ chunk * world_get_loaded_chunk(world *w, int x, int z){
 // ask the gpu to upload the updated state of each chunk
 void world_send_update(world *w){
     // Todo : add a stack to world and when a chunk is modified in world, in add the index to the stack, then on update empties stack and update each chunk to the gpu;
-    for (size_t i = 0; i < TOTAL_CHUNKS; i++){// ToDo : fixray for each
-        if (w->loaded_chunks->container[i] != _fixray_null){
-            chunk * c = w->loaded_chunks->container[i];
-            if (c->faces_dirty || c->faces_dirty || c->rotations_dirty){
-                uint64_t chunk_index = fixray_get_index(w->loaded_chunks, c);
-                gpu_upload(w->gpu, chunk_index, c);
-            }
+    fixray_foreach(chunk *c, w->loaded_chunks){
+        if (c->faces_dirty || c->faces_dirty || c->rotations_dirty){
+            uint64_t chunk_index = fixray_get_index(w->loaded_chunks, c);
+            gpu_upload(w->gpu, chunk_index, c);
         }
     }
 }
@@ -277,12 +267,8 @@ void world_load_chunk(world * w, int x, int z);
 void world_unload_chunk(world * w, int x, int z);
 
 void world_cleanup(world * w){
-    //Todo : for each fixray
-    for (size_t i = 0; i < TOTAL_CHUNKS; i++){
-        if( w->loaded_chunks->container[i] != _fixray_null){
-            chunk * c = w->loaded_chunks->container[i];
-            chunk_cleanup(c);
-        }
+    fixray_foreach(chunk *c, w->loaded_chunks){
+        chunk_cleanup(c);
     }
 
     htb_cleanup(w->cache, (void (*)(void*))chunk_cleanup);
