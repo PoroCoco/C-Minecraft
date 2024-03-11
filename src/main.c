@@ -172,23 +172,20 @@ int main(int argc, char const *argv[])
 
         // Render each chunk
         float tmp_draw = (float)glfwGetTime();
-        for (size_t i = 0; i < TOTAL_CHUNKS; i++){// ToDo : fixray for each
-            if( w->loaded_chunks->container[i] != _fixray_null){
-                chunk * c = w->loaded_chunks->container[i];
-                if (c->in_frustum){
-                mat4 model = GLM_MAT4_IDENTITY_INIT;
-                vec3 translate = {(float)(c->x) * CHUNK_X_SIZE, (float)0, (float)(c->z)*CHUNK_Z_SIZE};
-                glm_translate(model, translate);
-                shader_set_m4(s, "model", model);
+        fixray_foreach(chunk *c, w->loaded_chunks){
+            if (c->in_frustum){
+            mat4 model = GLM_MAT4_IDENTITY_INIT;
+            vec3 translate = {(float)(c->x) * CHUNK_X_SIZE, (float)0, (float)(c->z)*CHUNK_Z_SIZE};
+            glm_translate(model, translate);
+            shader_set_m4(s, "model", model);
 
-                // Make chunk fall out of the sky
-                float y_offset = chunk_y_offset_spawn(c->view_time);
-                shader_set_float(s, "chunkYOffset", y_offset);
-                gpu_draw(gpu, i);
-                }
+            // Make chunk fall out of the sky
+            float y_offset = chunk_y_offset_spawn(c->view_time);
+            shader_set_float(s, "chunkYOffset", y_offset);
+            gpu_draw(gpu, fixray_foreach_count);
             }
         }
-        
+
         // Render the skybox
         {
             glDepthMask(GL_FALSE);

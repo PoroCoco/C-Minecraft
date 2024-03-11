@@ -96,13 +96,10 @@ void world_update_frustum(world *w, player *p, float fov, float aspect, float z_
     frustum frustum = frustum_init(p->cam, aspect, fov, z_near, z_far);
 
     int frustum_count = 0;
-    for (size_t i = 0; i < TOTAL_CHUNKS; i++){// ToDo : fixray for each
-        if (w->loaded_chunks->container[i] != _fixray_null){
-            chunk *c = w->loaded_chunks->container[i];
-            c->in_frustum = chunk_is_in_frustum(&frustum, c);
-            if (c->in_frustum){
-                frustum_count++;
-            }
+    fixray_foreach(chunk *c, w->loaded_chunks){
+        c->in_frustum = chunk_is_in_frustum(&frustum, c);
+        if (c->in_frustum){
+            frustum_count++;
         }
     }
     printf("Total chunks : %d, in frustum %d\n", TOTAL_CHUNKS, frustum_count);

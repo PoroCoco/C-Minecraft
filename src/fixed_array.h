@@ -17,7 +17,22 @@ typedef struct fixray{
     void ** container; 
     uint64_t size;
     uint64_t count;
+    #ifdef _WIN32
+        HANDLE mutex;
+    #elif __linux__
+        pthread_mutex_t mutex;
+    #endif
 } fixray;
+
+// Loops over each element stored inside the fixed array, skipping the indices with no element
+// fixray_foreach_count can be used inside the scope, it is the current item index
+#define fixray_foreach(item, fixray) \
+    for(int fixray_foreach_count = 0,\
+            keep = 1, \
+            size = fixray->size; \
+        fixray_foreach_count != size; \
+        fixray_foreach_count++, keep = 1) \
+      for(item = (fixray->container[fixray_foreach_count]); keep && ((fixray->container[fixray_foreach_count]) != _fixray_null) ; keep = !keep)
 
 fixray *fixray_init(uint64_t size);
 
