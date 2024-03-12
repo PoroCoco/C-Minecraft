@@ -190,9 +190,9 @@ void gpu_upload(gpu* gpu, uint64_t chunk_index, chunk *c){
     assert(MAX_FACE_IN_CHUNK > gpu->instances_count[chunk_index]); // Need to increase the max face per chunk
     DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*MAX_FACE_IN_CHUNK*3, sizeof(float)*2*gpu->instances_count[chunk_index], textures_start));
 
-    float * rotations_values = chunk_get_rotations_values(c, &(gpu->instances_count[chunk_index]));
+    float * faces_rotations = chunk_get_faces_rotations(c, &(gpu->instances_count[chunk_index]));
     assert(MAX_FACE_IN_CHUNK > gpu->instances_count[chunk_index]); // Need to increase the max face per chunk
-    DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*MAX_FACE_IN_CHUNK*5, sizeof(float)*1*gpu->instances_count[chunk_index], rotations_values));
+    DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*MAX_FACE_IN_CHUNK*5, sizeof(float)*1*gpu->instances_count[chunk_index], faces_rotations));
 }
 
 void gpu_draw(gpu* gpu, uint64_t index){

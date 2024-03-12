@@ -89,39 +89,38 @@ void add_face_vertices(float * vertex_data, direction d, int face_count){
 
 
 void chunk_generate_faces_rotations(chunk * c){
-    unsigned int previous_face_count = c->faces_count;
     // Allocating the maximum possible faces_offsets size. Doesn't actually allocate too much thanks to virtual memory as we'll not write on much of it  
-    c->rotations_values = realloc(c->rotations_values, sizeof(*c->rotations_values) * 1 * 6 * CHUNK_SIZE); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
-    assert(c->rotations_values);
-    c->rotations_count = 0;
+    c->faces_rotations = realloc(c->faces_rotations, sizeof(*c->faces_rotations) * 1 * 6 * CHUNK_SIZE); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
+    assert(c->faces_rotations);
+    unsigned int rotations_count = 0;
 
     for (int block_index = 0; block_index < CHUNK_SIZE; block_index++){
         if (c->blocks[block_index].is_solid){
             for (direction d = DIR_START; d < DIR_COUNT; d++){
                 if (!chunk_is_solid_direction(c, block_index, d)){
-                    c->rotations_values[c->rotations_count] = (float)d;
-                    c->rotations_count += 1;
+                    c->faces_rotations[rotations_count] = (float)d;
+                    rotations_count += 1;
                 }
             }
         }
     }
 
     // Now that we know the actual size we can resize it
-    assert(c->rotations_count == previous_face_count);
-    c->rotations_values = realloc(c->rotations_values, sizeof(*c->rotations_values) * 1 * c->rotations_count);
+    assert(rotations_count == c->faces_count);
+    c->faces_rotations = realloc(c->faces_rotations, sizeof(*c->faces_rotations) * 1 * c->faces_count);
 }
 
 
 // Returns a pointer to the rotations values for this chunk, this pointer only serve as a view and shouldn't be freed
-float * chunk_get_rotations_values(chunk * c, unsigned int *instance_count){
+float * chunk_get_faces_rotations(chunk * c, unsigned int *instance_count){
     if (c->rotations_dirty){
         // float time_start = (float)glfwGetTime();
         chunk_generate_faces_rotations(c);
         // printf("rotations %f\n", (float)glfwGetTime() - time_start);
         c->rotations_dirty = false;
     }
-    *instance_count = c->rotations_count;
-    return c->rotations_values;
+    *instance_count = c->faces_count;
+    return c->faces_rotations;
 }
 
 void chunk_index_to_pos(int block_index, vec3 pos){
@@ -136,7 +135,7 @@ void add_face_offset(float * faces_offsets, direction d, int face_count, int blo
     faces_offsets[(face_count * 3) + 2] = (float)chunk_block_z(block_index); //z
 }
 
-
+// Should be called before the generate_face_[texture/rotations] as it sets the faces_count value
 void chunk_generate_faces_offsets(chunk * c){
     // Allocating the maximum possible faces_offsets size. Doesn't actually allocate too much thanks to virtual memory as we'll not write on much of it  
     c->faces_offsets = realloc(c->faces_offsets, sizeof(float) * 3 * 6 * CHUNK_SIZE); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
@@ -173,50 +172,49 @@ float * chunk_get_faces_offsets(chunk * c, unsigned int *instance_count){
     return c->faces_offsets;
 }
 
-void add_face_textures(float * textures_buffer, direction d, int face_count, int block_index, block_id id, atlas * a){
+void add_face_textures(float * faces_textures, direction d, int face_count, int block_index, block_id id, atlas * a){
     vec2 start, end;
     atlas_get_coord(a, id, start, end, d);
-    textures_buffer[(face_count * 2) + 0] = start[0];
-    textures_buffer[(face_count * 2) + 1] = start[1];
+    faces_textures[(face_count * 2) + 0] = start[0];
+    faces_textures[(face_count * 2) + 1] = start[1];
 
 }
 
-void chunk_generate_textures_buffer(chunk * c, atlas * a){
-    unsigned int offset_face_count = c->faces_count;
-    c->textures_buffer = realloc(c->textures_buffer, sizeof(float) * 2 * c->faces_count);
-    c->faces_count = 0;
+void chunk_generate_faces_textures(chunk * c, atlas * a){
+    c->faces_textures = realloc(c->faces_textures, sizeof(float) * 2 * c->faces_count);
+    unsigned int texture_count = 0;
 
     for (int block_index = 0; block_index < CHUNK_SIZE; block_index++){
         if (c->blocks[block_index].is_solid){
             for (direction d = DIR_START; d < DIR_COUNT; d++){
                 if (!chunk_is_solid_direction(c, block_index, d)){
-                    add_face_textures(c->textures_buffer, d, c->faces_count, block_index, c->blocks[block_index].id, a);
-                    c->faces_count += 1;
+                    add_face_textures(c->faces_textures, d, texture_count, block_index, c->blocks[block_index].id, a);
+                    texture_count += 1;
                 }
             }
         }
     }
-    assert(c->faces_count == offset_face_count);
+    assert(texture_count == c->faces_count);
 }
 
 // Returns a pointer to the texture buffer for this chunk, this pointer only serve as a view and shouldn't be free
 float * chunk_get_textures(chunk * c, unsigned int * faces_count, atlas * a){
     if (c->textures_dirty){
         // float time_start = (float)glfwGetTime();
-        chunk_generate_textures_buffer(c, a);
+        chunk_generate_faces_textures(c, a);
         // printf("textures %f\n", (float)glfwGetTime() - time_start);
         c->textures_dirty = false;
     }
     *faces_count = c->faces_count;
-    return c->textures_buffer;
+    return c->faces_textures;
 }
 
 size_t chunk_sizeof(chunk * c){
     size_t size = 0;
     size += sizeof(c->blocks);
-    size += c->textures_count * sizeof(*(c->textures_buffer));
-    size += c->faces_count * sizeof(*(c->faces_offsets));
-    size += c->rotations_count * sizeof(*(c->rotations_values));
+    size += 2 * c->faces_count * sizeof(*(c->faces_textures));
+    size += 3 * c->faces_count * sizeof(*(c->faces_offsets));
+    size += 1 * c->faces_count * sizeof(*(c->faces_rotations));
     return size;
 }
 
@@ -339,16 +337,15 @@ chunk * chunk_init(int x, int z){
         // printf("\n");
     }
     // c->blocks[0] = block_create(BLOCK_DIRT);
-    c->view_time = (float)glfwGetTime();
+    c->timestap_generation = (float)glfwGetTime();
 
     c->faces_offsets = NULL;
-    c->faces_offsets = 0;
+    c->faces_count = 0;
     c->faces_dirty = true;
-    c->textures_buffer = NULL;
+    c->faces_textures = NULL;
     c->textures_dirty = true;
-    c->rotations_values = NULL;
+    c->faces_rotations = NULL;
     c->rotations_dirty = true;
-    c->rotations_count = 0;
     c->in_frustum = false;
     return c;
 }
@@ -524,8 +521,8 @@ uint64_t chunk_get_id(chunk * c){
 }
 
 void chunk_cleanup(chunk * c){
-    free(c->rotations_values);
-    free(c->textures_buffer);
+    free(c->faces_rotations);
+    free(c->faces_textures);
     free(c->faces_offsets);
     free(c);
 }

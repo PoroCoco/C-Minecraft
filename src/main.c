@@ -180,7 +180,7 @@ int main(int argc, char const *argv[])
             shader_set_m4(s, "model", model);
 
             // Make chunk fall out of the sky
-            float y_offset = chunk_y_offset_spawn(c->view_time);
+            float y_offset = chunk_y_offset_spawn(c->timestap_generation);
             shader_set_float(s, "chunkYOffset", y_offset);
             gpu_draw(gpu, fixray_foreach_count);
             }

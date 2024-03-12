@@ -24,26 +24,24 @@
 
 #define MAX_FACE_IN_CHUNK 100000
 
-#define RENDER_DISTANCE 8*2
+#define RENDER_DISTANCE 4*2
 #define TOTAL_CHUNKS (RENDER_DISTANCE*RENDER_DISTANCE)
 
 typedef struct chunk {
     int x; 
     int z;
     block blocks[CHUNK_SIZE];
-    float * faces_offsets; // vec3
+    
     unsigned int faces_count; // The number of visible block faces
+    float * faces_offsets; // vec3
+    float * faces_textures;
+    float * faces_rotations;
     bool faces_dirty;
-
-    float * textures_buffer;
-    unsigned int textures_count;
     bool textures_dirty;
-    float * rotations_values;
-    unsigned int rotations_count;
     bool rotations_dirty;
-
-    float view_time; // The time when the chunk was loaded/in view
     bool in_frustum;
+
+    float timestap_generation; // The time when the chunk was generated
 } chunk;
 
 chunk * chunk_init(int x, int y);
@@ -67,11 +65,12 @@ bool chunk_is_solid_direction(chunk const * c, int block_index, direction d);
 
 float * chunk_get_faces_offsets(chunk * c, unsigned int *instance_count);
 float * chunk_get_textures(chunk * c, unsigned int * faces_count, atlas * a);
-float * chunk_get_rotations_values(chunk * c, unsigned int *instance_count);
+float * chunk_get_faces_rotations(chunk * c, unsigned int *instance_count);
 
 int chunk_block_x(int block_index);
 int chunk_block_y(int block_index);
 int chunk_block_z(int block_index);
 
+size_t chunk_sizeof(chunk * c);
 
 void chunk_cleanup(chunk * c);
