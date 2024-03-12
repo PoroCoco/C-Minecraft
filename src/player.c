@@ -133,13 +133,13 @@ player * player_init(camera * cam, world * world){
     return p;
 }
 
-void player_place_block(player *p, block b){
+void player_place_block(player *p, uint8_t block_id){
     chunk * target_chunk = NULL;
     direction d;
     int block_index = raycast_adjacent(p, &target_chunk, &d);
     if (block_index != -1){
         assert(target_chunk);
-        chunk_add_block(target_chunk, b, block_index);
+        chunk_add_block(target_chunk, block_id, block_index);
     }
 }
 
@@ -157,7 +157,7 @@ void player_mouse_button_callback(player *p, int button, int action, int mods){
         player_break_block(p);
     }
     if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS){
-        player_place_block(p, block_create(BLOCK_DIRT));
+        player_place_block(p, BLOCK_DIRT);
     }
 }
 

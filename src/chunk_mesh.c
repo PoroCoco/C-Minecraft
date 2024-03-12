@@ -33,7 +33,7 @@ bool chunk_is_solid_direction(chunk const * c, int block_index, direction d){
         return false;
     }
 
-    return c->blocks[block_index + direction_step_value(d)].is_solid;
+    return block_lookup[c->block_ids[block_index + direction_step_value(d)]].is_solid;
 }
 
 void chunk_generate_faces_rotations(chunk * c){
@@ -43,7 +43,7 @@ void chunk_generate_faces_rotations(chunk * c){
     unsigned int rotations_count = 0;
 
     for (int block_index = 0; block_index < CHUNK_SIZE; block_index++){
-        if (c->blocks[block_index].is_solid){
+         if (block_lookup[c->block_ids[block_index]].is_solid){
             for (direction d = DIR_START; d < DIR_COUNT; d++){
                 if (!chunk_is_solid_direction(c, block_index, d)){
                     c->faces_rotations[rotations_count] = (float)d;
@@ -86,7 +86,7 @@ void chunk_generate_faces_offsets(chunk * c){
 
     // printf("iterating over the chunk\n");
     for (int block_index = 0; block_index < CHUNK_SIZE; block_index++){
-        if (c->blocks[block_index].is_solid){
+         if (block_lookup[c->block_ids[block_index]].is_solid){
             for (direction d = DIR_START; d < DIR_COUNT; d++){
                 if (!chunk_is_solid_direction(c, block_index, d)){
                     // printf("adding face %d for block %d\n", d, block_index);
@@ -113,7 +113,7 @@ float * chunk_get_faces_offsets(chunk * c, unsigned int *instance_count){
     return c->faces_offsets;
 }
 
-void add_face_textures(float * faces_textures, direction d, int face_count, int block_index, block_id id, atlas * a){
+void add_face_textures(float * faces_textures, direction d, int face_count, int block_index, uint8_t id, atlas * a){
     vec2 start, end;
     atlas_get_coord(a, id, start, end, d);
     faces_textures[(face_count * 2) + 0] = start[0];
@@ -126,10 +126,10 @@ void chunk_generate_faces_textures(chunk * c, atlas * a){
     unsigned int texture_count = 0;
 
     for (int block_index = 0; block_index < CHUNK_SIZE; block_index++){
-        if (c->blocks[block_index].is_solid){
+        if (block_lookup[c->block_ids[block_index]].is_solid){
             for (direction d = DIR_START; d < DIR_COUNT; d++){
                 if (!chunk_is_solid_direction(c, block_index, d)){
-                    add_face_textures(c->faces_textures, d, texture_count, block_index, c->blocks[block_index].id, a);
+                    add_face_textures(c->faces_textures, d, texture_count, block_index, c->block_ids[block_index], a);
                     texture_count += 1;
                 }
             }

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 
-#define BLOCK_AIR -1
 
 typedef enum block_id {
     BLOCK_DIRT = 0,
@@ -13,6 +13,7 @@ typedef enum block_id {
     BLOCK_COUNT
 } block_id;
 
+#define BLOCK_AIR BLOCK_COUNT
 
 typedef struct block {
     block_id id;
@@ -20,6 +21,14 @@ typedef struct block {
     bool is_transparent;
 } block;
 
+static block block_lookup[BLOCK_COUNT+1] = {
+    {.id = 0, .is_solid = true, .is_transparent = false},
+    {.id = 1, .is_solid = true, .is_transparent = false},
+    {.id = 2, .is_solid = true, .is_transparent = true},
+    {.id = 3, .is_solid = true, .is_transparent = false},
+    {.id = 4, .is_solid = true, .is_transparent = false},
+    {.id = 5, .is_solid = false, .is_transparent = false},
+};
 
 
-block block_create(int id);
+block block_create(uint8_t id);

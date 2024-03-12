@@ -14,24 +14,24 @@
 void chunk_generate_tree(chunk *c, int x, int z, int y){
     int tree_height = 5;    
     for (size_t i = 0; i < tree_height; i++){
-        c->blocks[((i+y) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = block_create(BLOCK_WOOD);
+        c->block_ids[((i+y) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = BLOCK_WOOD;
         if (i>2){
             for (direction d = DIR_START; d < DIR_COUNT; d++){
                 if (d == BOTTOM || d == TOP) continue;
                 int tree_trunk_pos = (int)((i+y) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x;
                 int leaf_pos = tree_trunk_pos + direction_step_value(d);
-                c->blocks[leaf_pos] = block_create(BLOCK_LEAF);
+                c->block_ids[leaf_pos] = BLOCK_LEAF;
             }
         }
     }
-    c->blocks[((tree_height+y) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = block_create(BLOCK_LEAF);
+    c->block_ids[((tree_height+y) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = BLOCK_LEAF;
     for (direction d = DIR_START; d < DIR_COUNT; d++){
         if (d == BOTTOM || d == TOP) continue;
         int tree_trunk_pos = (int)((tree_height+y) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x;
         int leaf_pos = tree_trunk_pos + direction_step_value(d);
-        c->blocks[leaf_pos] = block_create(BLOCK_LEAF);
+        c->block_ids[leaf_pos] = BLOCK_LEAF;
     }
-    c->blocks[((tree_height+y+1) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = block_create(BLOCK_LEAF);
+    c->block_ids[((tree_height+y+1) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = BLOCK_LEAF;
 }
 
 
@@ -42,7 +42,7 @@ chunk * chunk_init(int x, int z){
     c->z = z;
 
     for (size_t i = 0; i < CHUNK_SIZE; i++){
-        c->blocks[i] = block_create(BLOCK_AIR);
+        c->block_ids[i] = BLOCK_AIR;
     }
 
     // printf("init chunk %d,%d\n", x, z);
@@ -53,23 +53,23 @@ chunk * chunk_init(int x, int z){
             if (height < 30){
                 height = 30;
                 for (int i = height - 1; i > 0 ; i--){
-                    block b;
+                    uint8_t b;
                     if ((height-i) < 30){
-                        b = block_create(BLOCK_WATER);
+                        b = BLOCK_WATER;
                     }else if ((height-i) < height){
-                        b = block_create(BLOCK_STONE);
+                        b = BLOCK_STONE;
                     }
-                    c->blocks[(i * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = b;
+                    c->block_ids[(i * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = b;
                 }
             }else{
                 for (int i = height - 1; i > 0 ; i--){
-                    block b;
+                    uint8_t b;
                     if ((height - i) < 4 &&  height < 90){
-                        b = block_create(BLOCK_DIRT);
+                        b = BLOCK_DIRT;
                     }else{
-                        b = block_create(BLOCK_STONE);
+                        b = BLOCK_STONE;
                     }
-                    c->blocks[(i * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = b;
+                    c->block_ids[(i * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = b;
                 }
                 float tree_noise = get_noise_tree(x + c->x*CHUNK_X_SIZE , z+ c->z*CHUNK_Z_SIZE);
                 // printf("%f\t", tree_noise);
@@ -97,7 +97,7 @@ chunk * chunk_init(int x, int z){
 
 size_t chunk_sizeof(chunk * c){
     size_t size = 0;
-    size += sizeof(c->blocks);
+    size += sizeof(c->block_ids);
     size += 2 * c->faces_count * sizeof(*(c->faces_textures));
     size += 3 * c->faces_count * sizeof(*(c->faces_offsets));
     size += 1 * c->faces_count * sizeof(*(c->faces_rotations));
@@ -124,18 +124,18 @@ void chunk_index_to_pos(int block_index, vec3 pos){
 
 
 // ToDo : OPTI
-void chunk_add_block(chunk * c, block b, int index){
+void chunk_add_block(chunk * c, uint8_t block_id, int index){
     if (index < 0 || index > CHUNK_SIZE){
         fprintf(stderr, "Tried to add a block at an invalid index inside a chunk !\n");
         return;
     }
-    printf("Adding block id %d to chunk %d,%d, at pos x,z,y %d,%d,%d\n", b.id, c->x, c->z, chunk_block_x(index), chunk_block_z(index), chunk_block_y(index));
+    printf("Adding block id %d to chunk %d,%d, at pos x,z,y %d,%d,%d\n", block_id, c->x, c->z, chunk_block_x(index), chunk_block_z(index), chunk_block_y(index));
 
-    if (c->blocks[index].id != BLOCK_AIR){
+    if (c->block_ids[index] != BLOCK_AIR){
         fprintf(stderr, "Tried to replace an existing block inside a chunk ! Was this expected ?\n");
     }
 
-    c->blocks[index] = b;
+    c->block_ids[index] = block_id;
     c->textures_dirty = true; // Brute force solution, need to make a smarter update 
     c->faces_dirty = true; // Brute force solution, need to make a smarter update 
     c->rotations_dirty = true; // Brute force solution, need to make a smarter update 
@@ -148,7 +148,7 @@ void chunk_remove_block(chunk * c, int index){
         return;
     }
 
-    c->blocks[index] = block_create(BLOCK_AIR);
+    c->block_ids[index] = BLOCK_AIR;
     c->textures_dirty = true; // Brute force solution, need to make a smarter update 
     c->faces_dirty = true; // Brute force solution, need to make a smarter update 
     c->rotations_dirty = true; // Brute force solution, need to make a smarter update 
@@ -172,7 +172,7 @@ bool chunk_is_pos_inside_block(chunk const * c, vec3 pos){
     if (block_index < 0 && block_index > CHUNK_SIZE){
         return false;
     }
-    return c->blocks[block_index].is_solid;
+    return block_lookup[c->block_ids[block_index]].is_solid;
 }
 
 

@@ -30,7 +30,7 @@
 typedef struct chunk {
     int x; 
     int z;
-    block blocks[CHUNK_SIZE];
+    uint8_t block_ids[CHUNK_SIZE];
     
     unsigned int faces_count; // The number of visible block faces
     float * faces_offsets; // vec3
@@ -46,7 +46,7 @@ typedef struct chunk {
 
 chunk * chunk_init(int x, int y);
 
-void chunk_add_block(chunk * c, block b, int index);
+void chunk_add_block(chunk * c, uint8_t block_id, int index);
 void chunk_remove_block(chunk * c, int index);
 
 float chunk_norm_pos_x(chunk *c, float x);
