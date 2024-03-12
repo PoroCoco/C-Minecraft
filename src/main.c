@@ -25,25 +25,25 @@
 #define WIDTH 2300
 #define HEIGHT 1200
 
-// ToDo : Could be mat3 
-static const mat4 rotation_matrix[6] = {
+// These are defined as row major but read as column major ie the translation vector is the last row not the last column
+static const mat4 transform_matrices[6] = {
     {   // Top : 90 around X
         {1.f, 0.f, 0.f, 0.f},
         {0.f, 0.f, -1.f, 0.f},
         {0.f, 1.f, 0.f, 0.f},
-        {0.f, 0.f, 0.f, 1.f}
+        {0.f, 0.f, 1.f, 1.f}
     },
     {   // Bottom : -90 around X
         {1.f, 0.f, 0.f, 0.f},
         {0.f, 0.f, 1.f, 0.f},
         {0.f, -1.f, 0.f, 0.f},
-        {0.f, 0.f, 0.f, 1.f}
+        {0.f, 1.f, 0.f, 1.f}
     },
     {   // North : 180 around Y
         {-1.f, 0.f, 0.f, 0.f},
         {0.f, 1.f, 0.f, 0.f},
         {0.f, 0.f, -1.f, 0.f},
-        {0.f, 0.f, 0.f, 1.f}
+        {1.f, 0.f, 1.f, 1.f}
     },
     {   // South : nothing
         {1.f, 0.f, 0.f, 0.f},
@@ -55,13 +55,13 @@ static const mat4 rotation_matrix[6] = {
         {0.f, 0.f, -1.f, 0.f},
         {0.f, 1.f, 0.f, 0.f},
         {1.f, 0.f, 0.f, 0.f},
-        {0.f, 0.f, 0.f, 1.f}
+        {0.f, 0.f, 1.f, 1.f}
     },
     {   // West : -90 around Y
         {0.f, 0.f, 1.f, 0.f},
         {0.f, 1.f, 0.f, 0.f},
         {-1.f, 0.f, 0.f, 0.f},
-        {0.f, 0.f, 0.f, 1.}
+        {1.f, 0.f, 0.f, 1.}
     }
 };
 
@@ -164,7 +164,7 @@ int main(int argc, char const *argv[])
         glm_perspective(glm_rad(fov), (float)WIDTH / (float)HEIGHT, 0.1f, 10000.0f, projection);
         shader_set_m4(s, "view", cam->view);
         shader_set_m4(s, "projection", projection);
-        shader_set_rotation_matrices(s, "rotationMatrices", (float (*)[4][4])rotation_matrix);
+        shader_set_transform_matrices(s, "transfromMatrices", (float (*)[4][4])transform_matrices);
 
         // Applies frustum to world
         world_update_frustum(w, player, fov, (float)WIDTH / (float)HEIGHT, 0.1f, 10000.0f);
