@@ -27,7 +27,7 @@ typedef struct fixray{
 // Loops over each element stored inside the fixed array, skipping the indices with no element
 // fixray_foreach_count can be used inside the scope, it is the current item index
 #define fixray_foreach(item, fixray) \
-    for(int fixray_foreach_count = 0,\
+    for(uint64_t fixray_foreach_count = 0,\
             keep = 1, \
             size = fixray->size; \
         fixray_foreach_count != size; \

@@ -149,8 +149,8 @@ void world_update_acquired(world * w, int *acquired){
     while(acquired[index*2] != INT_MAX){
         x = acquired[index*2 + 0];
         z = acquired[index*2 + 1];
-        queue_enqueue(w->chunk_to_acquire, (void*)x);
-        queue_enqueue(w->chunk_to_acquire, (void*)z);
+        queue_enqueue(w->chunk_to_acquire, (void*)(intptr_t)x);
+        queue_enqueue(w->chunk_to_acquire, (void*)(intptr_t)z);
         index++;
     }
     printf("Acquired %d\n", index);
@@ -173,11 +173,12 @@ bool world_update_position(world * w, float x, float z){
     acquired[0] = INT_MAX;
 
 
+    // printf("center chunk faces %u, total sizeof in bytes : %zu\n", w->center_chunk->faces_count, chunk_sizeof(w->center_chunk));
     // get last chunk
     int count = 0;
     while (!queue_is_empty(w->chunk_to_acquire) && count < CHUNK_LOAD_PER_FRAME){
-        int x = (int)queue_dequeue(w->chunk_to_acquire);
-        int z = (int)queue_dequeue(w->chunk_to_acquire);
+        int x = (int)(intptr_t)queue_dequeue(w->chunk_to_acquire);
+        int z = (int)(intptr_t)queue_dequeue(w->chunk_to_acquire);
         if (x >= (new_center_x - (RENDER_DISTANCE/2)) &&
             z >= (new_center_z - (RENDER_DISTANCE/2)) &&
             x < (new_center_x + (RENDER_DISTANCE/2)) &&

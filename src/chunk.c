@@ -274,7 +274,7 @@ void chunk_generate_tree(chunk *c, int x, int z, int y){
         if (i>2){
             for (direction d = DIR_START; d < DIR_COUNT; d++){
                 if (d == BOTTOM || d == TOP) continue;
-                int tree_trunk_pos = ((i+y) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x;
+                int tree_trunk_pos = (int)((i+y) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x;
                 int leaf_pos = tree_trunk_pos + direction_step_value(d);
                 c->blocks[leaf_pos] = block_create(BLOCK_LEAF);
             }
@@ -283,7 +283,7 @@ void chunk_generate_tree(chunk *c, int x, int z, int y){
     c->blocks[((tree_height+y) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = block_create(BLOCK_LEAF);
     for (direction d = DIR_START; d < DIR_COUNT; d++){
         if (d == BOTTOM || d == TOP) continue;
-        int tree_trunk_pos = ((tree_height+y) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x;
+        int tree_trunk_pos = (int)((tree_height+y) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x;
         int leaf_pos = tree_trunk_pos + direction_step_value(d);
         c->blocks[leaf_pos] = block_create(BLOCK_LEAF);
     }
