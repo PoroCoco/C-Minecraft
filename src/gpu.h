@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <chunk.h>
+#include <chunk_mesh.h>
 #include <atlas.h>
 
 #define DEBUG_GL(command) do { \

@@ -186,7 +186,7 @@ void gpu_upload(gpu* gpu, uint64_t chunk_index, chunk *c){
     assert(MAX_FACE_IN_CHUNK > gpu->instances_count[chunk_index]); // Need to increase the max face per chunk
     DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float)*3*gpu->instances_count[chunk_index], instaces_offsets));
 
-    float * textures_start = chunk_get_textures(c, &(gpu->instances_count[chunk_index]), gpu->atlas);
+    float * textures_start = chunk_get_faces_textures(c, &(gpu->instances_count[chunk_index]), gpu->atlas);
     assert(MAX_FACE_IN_CHUNK > gpu->instances_count[chunk_index]); // Need to increase the max face per chunk
     DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*MAX_FACE_IN_CHUNK*3, sizeof(float)*2*gpu->instances_count[chunk_index], textures_start));
 
