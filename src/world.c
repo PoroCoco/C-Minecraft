@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <limits.h>
+#include <timing.h>
 
 #include <cglm/cglm.h> 
 
@@ -11,18 +12,26 @@ world * world_init(gpu * gpu){
     world * w = malloc(sizeof(*w));
     assert(w);
     w->gpu = gpu;
+    w->chunk_to_acquire = queue_init(2*TOTAL_CHUNKS*20);
     w->loaded_chunks = fixray_init(TOTAL_CHUNKS);
-    for (int z = -RENDER_DISTANCE/2 ; z < RENDER_DISTANCE/2 ; z++){
-        for (int x = -RENDER_DISTANCE/2;  x < RENDER_DISTANCE/2; x++){
-            chunk * c = chunk_init(x, z);
-            uint64_t chunk_index = fixray_add(w->loaded_chunks, c);
-            gpu_upload(w->gpu, chunk_index, c);
+    // Enqueues all the starting chunks in a kind of spiral pattern (square radius increasing until render distance)
+    for(int square_radius = 0; square_radius <= RENDER_DISTANCE; square_radius++){
+    for (int z = -square_radius ; z < square_radius+1 ; z++){
+        for (int x = -square_radius;  x < square_radius+1; x++){
+            if (abs(z) < square_radius && abs(x) < square_radius ) continue;
+            if (z == 0 && x == 0){
+                chunk * c = chunk_init(x, z);
+                uint64_t chunk_index = fixray_add(w->loaded_chunks, c);
+                gpu_upload(w->gpu, chunk_index, c);
+            }else{
+                queue_enqueue(w->chunk_to_acquire, (void*)(intptr_t)x);
+                queue_enqueue(w->chunk_to_acquire, (void*)(intptr_t)z);
+            }
         }
     }
-
+    }
     w->center_chunk = world_get_loaded_chunk(w, 0, 0);
     w->cache = htb_init(100000);
-    w->chunk_to_acquire = queue_init(2*TOTAL_CHUNKS*10);
     return w;
 }
 
@@ -54,8 +63,8 @@ on chunk moving -> find chunks discarded/acquired ->
 
 void world_compute_chunk_in_range(int center_x ,int center_z, int * array){
     int index = 0;
-    for (int z = -RENDER_DISTANCE/2; z < RENDER_DISTANCE/2; z++){
-        for (int x = -RENDER_DISTANCE/2; x < RENDER_DISTANCE/2; x++){
+    for (int z = -RENDER_DISTANCE; z < RENDER_DISTANCE; z++){
+        for (int x = -RENDER_DISTANCE; x < RENDER_DISTANCE; x++){
             array[index*2 +0] = x + center_x;
             array[index*2 +1] = z + center_z;
             index++;
@@ -69,24 +78,24 @@ void world_compute_acquired_chunks(int old_x, int new_x, int old_z, int new_z, i
 
     if (abs(new_x-old_x) < RENDER_DISTANCE && abs(new_z-old_z) < RENDER_DISTANCE) {
         if (new_x > old_x) {
-            for (int i = old_x + RENDER_DISTANCE / 2; i < new_x + RENDER_DISTANCE / 2; i++) {
-            for (int j = -RENDER_DISTANCE / 2; j < RENDER_DISTANCE / 2; j++) {
+            for (int i = old_x + RENDER_DISTANCE; i < new_x + RENDER_DISTANCE; i++) {
+            for (int j = -RENDER_DISTANCE; j < RENDER_DISTANCE; j++) {
                 array[global_index * 2] = i;
                 array[global_index * 2 + 1] = new_z + j;
                 global_index++;
                 }
             }
             if (new_z > old_z) {
-                for (int i = new_x - RENDER_DISTANCE / 2; i < old_x + RENDER_DISTANCE / 2; i++) {
-                for (int j = old_z + RENDER_DISTANCE / 2; j < new_z + RENDER_DISTANCE / 2; j++) {
+                for (int i = new_x - RENDER_DISTANCE; i < old_x + RENDER_DISTANCE; i++) {
+                for (int j = old_z + RENDER_DISTANCE; j < new_z + RENDER_DISTANCE; j++) {
                     array[global_index * 2] = i;
                     array[global_index * 2 + 1] = j;
                     global_index++;
                     }
                 }
             } else {
-                for (int i = new_x - RENDER_DISTANCE / 2; i < old_x + RENDER_DISTANCE / 2; i++) {
-                for (int j = new_z - RENDER_DISTANCE / 2; j < old_z - RENDER_DISTANCE / 2; j++) {
+                for (int i = new_x - RENDER_DISTANCE; i < old_x + RENDER_DISTANCE; i++) {
+                for (int j = new_z - RENDER_DISTANCE; j < old_z - RENDER_DISTANCE; j++) {
                     array[global_index * 2] = i;
                     array[global_index * 2 + 1] = j;
                     global_index++;
@@ -94,24 +103,24 @@ void world_compute_acquired_chunks(int old_x, int new_x, int old_z, int new_z, i
                 }
             }
         } else {
-            for (int i = new_x - RENDER_DISTANCE / 2; i < old_x - RENDER_DISTANCE / 2; i++) {
-            for (int j = -RENDER_DISTANCE / 2; j < RENDER_DISTANCE / 2; j++) {
+            for (int i = new_x - RENDER_DISTANCE; i < old_x - RENDER_DISTANCE; i++) {
+            for (int j = -RENDER_DISTANCE; j < RENDER_DISTANCE; j++) {
                 array[global_index * 2] = i;
                 array[global_index * 2 + 1] = new_z + j;
                 global_index++;
                 }
             }
             if (new_z > old_z) {
-                for (int i = old_x - RENDER_DISTANCE / 2; i < new_x + RENDER_DISTANCE / 2; i++) {
-                for (int j = old_z + RENDER_DISTANCE / 2; j < new_z + RENDER_DISTANCE / 2; j++) {
+                for (int i = old_x - RENDER_DISTANCE; i < new_x + RENDER_DISTANCE; i++) {
+                for (int j = old_z + RENDER_DISTANCE; j < new_z + RENDER_DISTANCE; j++) {
                     array[global_index * 2] = i;
                     array[global_index * 2 + 1] = j;
                     global_index++;
                     }
                 }
             } else {
-                for (int i = old_x - RENDER_DISTANCE / 2; i < new_x + RENDER_DISTANCE / 2; i++) {
-                for (int j = new_z - RENDER_DISTANCE / 2; j < old_z - RENDER_DISTANCE / 2; j++) {
+                for (int i = old_x - RENDER_DISTANCE; i < new_x + RENDER_DISTANCE; i++) {
+                for (int j = new_z - RENDER_DISTANCE; j < old_z - RENDER_DISTANCE; j++) {
                     array[global_index * 2] = i;
                     array[global_index * 2 + 1] = j;
                     global_index++;
@@ -157,10 +166,10 @@ void world_update_acquired(world * w, int *acquired){
 }
 
 bool chunk_in_range(chunk *c, int center_x, int center_z){
-    return (c->x >= (center_x - (RENDER_DISTANCE/2)) &&
-            c->z >= (center_z - (RENDER_DISTANCE/2)) &&
-            c->x < (center_x + (RENDER_DISTANCE/2)) &&
-            c->z < (center_z + (RENDER_DISTANCE/2)));
+    return (c->x >= (center_x - (RENDER_DISTANCE)) &&
+            c->z >= (center_z - (RENDER_DISTANCE)) &&
+            c->x < (center_x + (RENDER_DISTANCE)) &&
+            c->z < (center_z + (RENDER_DISTANCE)));
 }
 
 bool world_update_position(world * w, float x, float z){
@@ -173,16 +182,16 @@ bool world_update_position(world * w, float x, float z){
     acquired[0] = INT_MAX;
 
 
-    // printf("center chunk faces %u, total sizeof in bytes : %zu\n", w->center_chunk->faces_count, chunk_sizeof(w->center_chunk));
+    printf("center chunk faces %u, total sizeof in bytes : %zu\n", w->center_chunk->faces_count, chunk_sizeof(w->center_chunk));
     // get last chunk
     int count = 0;
     while (!queue_is_empty(w->chunk_to_acquire) && count < CHUNK_LOAD_PER_FRAME){
         int x = (int)(intptr_t)queue_dequeue(w->chunk_to_acquire);
         int z = (int)(intptr_t)queue_dequeue(w->chunk_to_acquire);
-        if (x >= (new_center_x - (RENDER_DISTANCE/2)) &&
-            z >= (new_center_z - (RENDER_DISTANCE/2)) &&
-            x < (new_center_x + (RENDER_DISTANCE/2)) &&
-            z < (new_center_z + (RENDER_DISTANCE/2))){
+        if (x >= (new_center_x - (RENDER_DISTANCE)) &&
+            z >= (new_center_z - (RENDER_DISTANCE)) &&
+            x < (new_center_x + (RENDER_DISTANCE)) &&
+            z < (new_center_z + (RENDER_DISTANCE))){
             chunk * c;
             if (chunk_in_cache_pos(w, x, z)){
                 c = world_get_chunk_cache(w, x, z);
