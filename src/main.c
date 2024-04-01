@@ -17,6 +17,7 @@
 #include <atlas.h>
 #include <gpu.h>
 #include <frustum.h>
+#include <timing.h>
 #ifdef __unix__
 #include <pthread.h>
 #endif
@@ -79,7 +80,7 @@ int main(int argc, char const *argv[])
     camera * cam = camera_init();
     GLFWwindow* window = window_init(WIDTH, HEIGHT, cam);
     atlas * atlas = atlas_init(ATLAS_RESOLUTION);
-    gpu * gpu = gpu_init(atlas);;
+    gpu * gpu = gpu_init(atlas);
     world * w = world_init(gpu);
     player * player = player_init(cam, w);
     window_data * window_data = glfwGetWindowUserPointer(window);
