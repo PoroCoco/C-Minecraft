@@ -17,6 +17,6 @@ typedef struct queue {
 queue * queue_init(uint64_t intial_size);
 void queue_enqueue(queue* q, void* value);
 void *queue_dequeue(queue* q);
-bool queue_is_empty(queue const* q);
-bool queue_is_full(queue const* q);
+bool queue_is_empty(queue* q);
+bool queue_is_full(queue* q);
 void queue_cleanup(queue* q);

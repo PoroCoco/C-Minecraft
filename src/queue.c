@@ -13,6 +13,14 @@ queue * queue_init(uint64_t size){
     return q;
 }
 
+bool _queue_is_full_lock_free(queue const* q){
+    return ((q->back == q->front) && (q->count > 0));
+}
+
+bool _queue_is_empty_lock_free(queue const* q){
+    return ((q->back == q->front) && (q->count == 0));
+}
+
 void queue_enqueue(queue* q, void* value){
     mtx_lock(&q->mutex);
     if (_queue_is_full_lock_free(q)){
@@ -40,26 +48,18 @@ void *queue_dequeue(queue* q){
     return element;
 }
 
-bool queue_is_full(queue const* q){
+bool queue_is_full(queue * q){
     mtx_lock(&q->mutex);
     bool res = ((q->back == q->front) && (q->count > 0));
     mtx_unlock(&q->mutex);
     return res;
 }
 
-bool queue_is_empty(queue const* q){
+bool queue_is_empty(queue * q){
     mtx_lock(&q->mutex);
     bool res = ((q->back == q->front) && (q->count == 0));
     mtx_unlock(&q->mutex);
     return res;
-}
-
-bool _queue_is_full_lock_free(queue const* q){
-    return ((q->back == q->front) && (q->count > 0));
-}
-
-bool _queue_is_empty_lock_free(queue const* q){
-    return ((q->back == q->front) && (q->count == 0));
 }
 
 void queue_cleanup(queue* q){
