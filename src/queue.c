@@ -23,10 +23,10 @@ bool _queue_is_empty_lock_free(queue const* q){
 
 void queue_enqueue(queue* q, void* value){
     mtx_lock(&q->mutex);
-    if (_queue_is_full_lock_free(q)){
-        fprintf(stderr, "Tried to enqueue into a full queue !\n");
+    while(_queue_is_full_lock_free(q)){
+        // fprintf(stderr, "Tried to enqueue into a full queue !\n");
         mtx_unlock(&q->mutex);
-        return;
+        mtx_lock(&q->mutex);
     }
     q->container[q->back++] = value;
     q->back = q->back%q->size;
