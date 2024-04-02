@@ -18,13 +18,12 @@
 #include <gpu.h>
 #include <frustum.h>
 #include <timing.h>
+#include <threads.h>
 #ifdef __unix__
 #include <pthread.h>
 #endif
 
 
-#define WIDTH 2300
-#define HEIGHT 1200
 
 // These are defined as row major but read as column major ie the translation vector is the last row not the last column
 static const mat4 transform_matrices[6] = {
@@ -78,57 +77,37 @@ int main(int argc, char const *argv[])
 {
     srand(654);
     camera * cam = camera_init();
-    GLFWwindow* window = window_init(WIDTH, HEIGHT, cam);
     atlas * atlas = atlas_init(ATLAS_RESOLUTION);
-    gpu * gpu = gpu_init(atlas);
+    gpu * gpu;
+    queue * command_queue_handle;
+    GLFWwindow* window;
+    bool render_thread_ready = false;
+    thrd_t render_thread;
+    struct render_thread_args args = {
+        .atlas = atlas,
+        .command_queue_handle = &command_queue_handle,
+        .gpu_handle = &gpu,
+        .ready = &render_thread_ready,
+        .cam = cam,
+        .window_handle = &window
+    };
+    int render_thread_id = thrd_create(&render_thread, render_thread_init, (void*) &args);
+    while (!render_thread_ready){
+        int j = 0;
+    }
+    gpu_shader_init(gpu, "../shaders/shader.vert", "../shaders/shader.frag", "chunk");
+    gpu_shader_init(gpu, "../shaders/skybox.vert", "../shaders/skybox.frag", "skybox");
+
     world * w = world_init(gpu);
     player * player = player_init(cam, w);
     window_data * window_data = glfwGetWindowUserPointer(window);
     window_data->player = player;
-
-    shader *s = shader_init("../shaders/shader.vert", "../shaders/shader.frag");
-    shader *skybox = shader_init("../shaders/skybox.vert", "../shaders/skybox.frag");
     
-    // Texture loading and generation
-    stbi_set_flip_vertically_on_load(true);  
-    unsigned int texture1;
-    DEBUG_GL(glGenTextures(1, &texture1));
-    DEBUG_GL(glBindTexture(GL_TEXTURE_2D, texture1)); 
-    // Setting up texture filtering (when object is bigger/smaller than texture which pixel do we take from the texture image)
-    DEBUG_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));	
-    DEBUG_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-    DEBUG_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-    DEBUG_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-    int width, height, nrChannels;
-    const char * texture1_path ="../textures/atlas.png";
-    unsigned char *data = stbi_load(texture1_path, &width, &height, &nrChannels, 0);
-    if (data){
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }else{
-        fprintf(stderr, "Failed to load a texture : %s\n", texture1_path);
-    }
-    stbi_image_free(data);
-    printf("textures created\n");
-
-
-    shader_use(s);
-    shader_set_int(s, "texture1", 0);
-
-    DEBUG_GL(glEnable(GL_DEPTH_TEST));
-
     // Render loop
     unsigned int frame_count = 0;
     float last_frame_time = 0.0f;  
     float delta_time = 0.0f;
-    
-    DEBUG_GL(glActiveTexture(GL_TEXTURE0));
-    DEBUG_GL(glBindTexture(GL_TEXTURE_2D, texture1));
 
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK); 
-    // Wireframe
-    // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
     printf("starting render loop\n");
     while(!window_should_close(window))
     {
@@ -155,17 +134,16 @@ int main(int argc, char const *argv[])
         time_regen = (float)glfwGetTime() - tmp_regen;
 
         float tmp_misc = (float)glfwGetTime();
-        // Clearing Screen
-        DEBUG_GL(glClearColor(0.2f, 0.3f, 0.3f, 1.0f));
-        DEBUG_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+        gpu_clear_screen(gpu);
+        gpu_draw_start(gpu);
 
-        shader_use(s);
+        gpu_shader_use(gpu, "chunk");
         mat4 projection = GLM_MAT4_IDENTITY_INIT;
         float fov = 55.0f;
         glm_perspective(glm_rad(fov), (float)WIDTH / (float)HEIGHT, 0.1f, 10000.0f, projection);
-        shader_set_m4(s, "view", cam->view);
-        shader_set_m4(s, "projection", projection);
-        shader_set_transform_matrices(s, "transfromMatrices", (float (*)[4][4])transform_matrices);
+        gpu_shader_set_m4(gpu, "chunk", "view", cam->view);
+        gpu_shader_set_m4(gpu, "chunk", "projection", projection);
+        gpu_shader_set_transform_matrices(gpu, "chunk", "transfromMatrices", (float (*)[4][4])transform_matrices);
 
         // Applies frustum to world
         world_update_frustum(w, player, fov, (float)WIDTH / (float)HEIGHT, 0.1f, 10000.0f);
@@ -178,43 +156,29 @@ int main(int argc, char const *argv[])
             mat4 model = GLM_MAT4_IDENTITY_INIT;
             vec3 translate = {(float)(c->x) * CHUNK_X_SIZE, (float)0, (float)(c->z)*CHUNK_Z_SIZE};
             glm_translate(model, translate);
-            shader_set_m4(s, "model", model);
+            gpu_shader_set_m4(gpu, "chunk", "model", model);
 
             // Make chunk fall out of the sky
             float y_offset = chunk_y_offset_spawn(c->timestap_generation);
-            shader_set_float(s, "chunkYOffset", y_offset);
+            gpu_shader_set_float(gpu, "chunk", "chunkYOffset", y_offset);
             gpu_draw(gpu, fixray_foreach_count);
             }
         }
 
         // Render the skybox
-        {
-            glDepthMask(GL_FALSE);
-            shader_use(skybox);
-            mat4 view_skybox = GLM_MAT4_ZERO_INIT;
-            glm_mat4_copy(cam->view, view_skybox);
-            view_skybox[3][3] = 1.f;
-            shader_set_m4(skybox, "view", view_skybox);
-            shader_set_m4(skybox, "projection", projection);
-            mat4 model = GLM_MAT4_IDENTITY_INIT;
-            vec3 translate = {cam->cameraPos[0], (float)cam->cameraPos[1], (float)cam->cameraPos[2]};
-            glm_translate(model, translate);
-            shader_set_m4(skybox, "model", model);
-            glBindVertexArray(gpu->skybox_vao);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, gpu->skybox_cubemap_texture);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-            glDepthMask(GL_TRUE);
-        }
+        vec3 translate = {cam->cameraPos[0], (float)cam->cameraPos[1], (float)cam->cameraPos[2]};
+        gpu_draw_skybox(gpu, cam->view, projection, translate);
         
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-        glFinish();
+        gpu_draw_end(gpu);
+        // glFinish();
         float time_draw = (float)glfwGetTime() - tmp_draw;
         frame_count++;
         printf("Frame time : %f (regen : %f, draw %f, world %f, misc %f)\n", delta_time, time_regen, time_draw, time_world_update, time_misc);
     }
 
-    shader_cleanup(s);
+    gpu_render_thread_stop(gpu);
+    // shader_cleanup(s);
+    // shader_cleanup(skybox);
     camera_cleanup(cam);
     atlas_cleanup(atlas);
     gpu_cleanup(gpu);
