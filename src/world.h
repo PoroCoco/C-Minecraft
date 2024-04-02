@@ -9,7 +9,7 @@
 #include <fixed_array.h>
 #include <queue.h>
 
-#define CHUNK_LOAD_PER_FRAME 1
+#define CHUNK_LOAD_PER_FRAME 4
 
 
 typedef struct world {
@@ -30,5 +30,6 @@ void world_unload_chunk(world* w, int x, int z);
 chunk* world_get_loaded_chunk(world* w, int x, int z);
 chunk* world_get_chunk_direction(world* w, chunk const* c, direction d);
 void world_send_update(world* w);
+int thread_generate_chunk(void * args);
 
 void world_cleanup(world* w);

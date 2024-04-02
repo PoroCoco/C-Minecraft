@@ -8,12 +8,21 @@
 
 #include <world.h>
 
+
+struct thread_chunk_gen_args {
+    int x;
+    int z;
+    world * w;
+};
+
+
 world * world_init(gpu * gpu){
     world * w = malloc(sizeof(*w));
     assert(w);
     w->gpu = gpu;
     w->chunk_to_acquire = queue_init(2*TOTAL_CHUNKS*20);
     w->loaded_chunks = fixray_init(TOTAL_CHUNKS);
+    w->cache = htb_init(100000);
     // Enqueues all the starting chunks in a kind of spiral pattern (square radius increasing until render distance)
     for(int square_radius = 0; square_radius <= RENDER_DISTANCE; square_radius++){
     for (int z = -square_radius ; z < square_radius+1 ; z++){
@@ -31,7 +40,6 @@ world * world_init(gpu * gpu){
     }
     }
     w->center_chunk = world_get_loaded_chunk(w, 0, 0);
-    w->cache = htb_init(100000);
     return w;
 }
 
@@ -152,10 +160,32 @@ void world_update_discarded(world * w, chunk ** discarded){
 }
 
 
+int thread_generate_chunk(void * args){
+    struct thread_chunk_gen_args * chunk_args = args;
+    int x = chunk_args->x;
+    int z = chunk_args->z;
+    world *w = chunk_args->w;
+    chunk * c;
+    if (chunk_in_cache_pos(w, x, z)){
+        c = world_get_chunk_cache(w, x, z);
+    }else{
+        c = chunk_init(x, z);
+    }
+    int count;
+    chunk_get_faces_offsets(c, &count);
+    chunk_get_faces_rotations(c, &count);
+    chunk_get_faces_textures(c, &count, w->gpu->atlas);
+    uint64_t chunk_index = fixray_add(w->loaded_chunks, c);
+    gpu_upload(w->gpu, chunk_index, c);
+    free(args);
+    return 0;
+}
+
 void world_update_acquired(world * w, int *acquired){
     int index = 0;
     int x,z;
     while(acquired[index*2] != INT_MAX){
+        // create a thread that generate said chunk, including its mesh data then fixray and upload
         x = acquired[index*2 + 0];
         z = acquired[index*2 + 1];
         queue_enqueue(w->chunk_to_acquire, (void*)(intptr_t)x);
@@ -192,14 +222,12 @@ bool world_update_position(world * w, float x, float z){
             z >= (new_center_z - (RENDER_DISTANCE)) &&
             x < (new_center_x + (RENDER_DISTANCE)) &&
             z < (new_center_z + (RENDER_DISTANCE))){
-            chunk * c;
-            if (chunk_in_cache_pos(w, x, z)){
-                c = world_get_chunk_cache(w, x, z);
-            }else{
-                c = chunk_init(x, z);
-            }
-            uint64_t chunk_index = fixray_add(w->loaded_chunks, c);
-            gpu_upload(w->gpu, chunk_index, c);
+            thrd_t thread;
+            struct thread_chunk_gen_args * chunk_args = malloc(sizeof(*chunk_args));
+            chunk_args->w = w;
+            chunk_args->x = x;
+            chunk_args->z = z;
+            int id = thrd_create(&thread, thread_generate_chunk, chunk_args);
             count++;
         }
     }
