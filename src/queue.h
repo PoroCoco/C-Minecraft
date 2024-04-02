@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <threads.h>
 
 typedef struct queue {
     void ** container;
@@ -9,6 +10,7 @@ typedef struct queue {
     uint64_t front;
     uint64_t count;
     uint64_t back;
+    mtx_t mutex;
 } queue;
 
 
