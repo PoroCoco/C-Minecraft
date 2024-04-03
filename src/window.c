@@ -44,6 +44,9 @@ void window_process_input(GLFWwindow *window, float delta_time)
     if(glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS){
         gpu_cycle_wireframe(w->gpu);
     }
+    if(glfwGetKey(window, GLFW_KEY_F5) == GLFW_PRESS){
+        gpu_shader_reload(w->gpu);
+    }
 
     camera_process_input(w->cam, window, delta_time);
 }

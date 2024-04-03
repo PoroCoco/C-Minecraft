@@ -95,8 +95,8 @@ int main(int argc, char const *argv[])
     while (!render_thread_ready){
         int j = 0;
     }
-    gpu_shader_init(gpu, "../shaders/shader.vert", "../shaders/shader.frag", "chunk");
-    gpu_shader_init(gpu, "../shaders/skybox.vert", "../shaders/skybox.frag", "skybox");
+    gpu_shader_reload(gpu);
+
 
     world * w = world_init(gpu);
     player * player = player_init(cam, w);

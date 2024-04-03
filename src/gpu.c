@@ -288,6 +288,20 @@ void gpu_draw_start(gpu* gpu){
     _gpu_create_command(gpu, COMMAND_DRAW_START, NULL);
 }
 
+void _gpu_shader_cleanup(gpu* gpu, struct gpu_command_shader_init * args){
+    shader *s = htb_get(gpu->shaders, _bad_str_hash(args->name));
+    htb_remove(gpu->shaders, _bad_str_hash(args->name));
+    shader_cleanup(s);
+}
+
+void gpu_shader_cleanup(gpu* gpu, const char * name){
+    struct gpu_command_shader_init * args = malloc(sizeof(*args));
+    args->name = name;
+    args->fragmentPath = NULL;
+    args->vertexPath = NULL;
+    _gpu_shader_cleanup(gpu, (void*) args);
+}
+
 void gpu_shader_init(gpu* gpu, const char * vertexPath, const char * fragmentPath, const char * name){
     struct gpu_command_shader_init * args = malloc(sizeof(*args));
     args->fragmentPath = fragmentPath;
@@ -300,6 +314,33 @@ void _gpu_shader_init(gpu* gpu, struct gpu_command_shader_init * args){
     shader * s = shader_init(args->vertexPath, args->fragmentPath);
     htb_add(gpu->shaders, _bad_str_hash(args->name), s);
 }
+
+void gpu_shader_reload(gpu* gpu){
+    _gpu_create_command(gpu, COMMAND_SHADER_RELOAD, NULL);
+}
+
+void _gpu_shader_reload(gpu* gpu){
+    // Remove previous shaders
+    struct gpu_command_shader_init * args = malloc(sizeof(*args));
+    if (htb_exist(gpu->shaders, _bad_str_hash("chunk"))){
+        args->name = "chunk";
+        _gpu_shader_cleanup(gpu, args);
+    }
+    if (htb_exist(gpu->shaders, _bad_str_hash("skybox"))){
+        args->name = "skybox";
+        _gpu_shader_cleanup(gpu, args);
+    }
+    args->name = "chunk";
+    args->vertexPath = "../shaders/shader.vert";
+    args->fragmentPath = "../shaders/shader.frag";
+    _gpu_shader_init(gpu, args);
+
+    args->name = "skybox";
+    args->vertexPath = "../shaders/skybox.vert";
+    args->fragmentPath = "../shaders/skybox.frag";
+    _gpu_shader_init(gpu, args);
+}
+
 
 void gpu_shader_use(gpu* gpu, const char * name){
     struct gpu_command_shader_init * args = malloc(sizeof(*args));
@@ -489,6 +530,17 @@ int render_thread_init(void * thread_args){
                 _gpu_shader_set_float(gpu, args);
                 break; 
             }
+            case COMMAND_SHADER_CLEANUP:
+            {
+                struct gpu_command_shader_init * args = command->args;
+                _gpu_shader_cleanup(gpu, args);
+                break; 
+            }   
+            case COMMAND_SHADER_RELOAD:
+            {
+                _gpu_shader_reload(gpu);
+                break; 
+            }   
             case COMMAND_WIREFRAME:
             {
                 _gpu_cycle_wireframe(gpu);

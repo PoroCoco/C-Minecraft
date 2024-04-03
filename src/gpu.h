@@ -56,6 +56,7 @@ enum command_types {
     COMMAND_SHADER_SET_INT,
     COMMAND_SHADER_USE,
     COMMAND_SHADER_CLEANUP,
+    COMMAND_SHADER_RELOAD,
     COMMAND_SCREEN_CLEAR,
     COMMAND_WIREFRAME,
     COMMAND_DRAW_START,
@@ -146,5 +147,6 @@ void gpu_shader_use(gpu* gpu, const char * name);
 void gpu_shader_set_m4(gpu* gpu, const char * shader_name, const char * uniform_name, mat4 value);
 void gpu_shader_set_transform_matrices(gpu* gpu, const char * shader_name, const char * uniform_name, mat4 *value);
 void gpu_shader_set_float(gpu* gpu, const char * shader_name, const char * uniform_name, float value);
+void gpu_shader_reload(gpu* gpu);
 
 void gpu_cleanup(gpu* gpu);

@@ -128,4 +128,5 @@ void shader_set_transform_matrices(shader *s, const char * var_name, mat4 *rotat
 
 void shader_cleanup(shader * s){
     DEBUG_GL(glDeleteProgram(s->id));
+    free(s);
 }
