@@ -42,6 +42,7 @@ typedef struct gpu {
 
     mtx_t mutex; // OpenGL does work well with multiple threads, therefore only 1 thread is assigned to do all this stuff
     mtx_t draw_mutex; // mutex locked at beginning of drawing and unlocked once draw commend_end processed
+    int wireframe_mode;
 } gpu;
 
 enum command_types {
@@ -56,6 +57,7 @@ enum command_types {
     COMMAND_SHADER_USE,
     COMMAND_SHADER_CLEANUP,
     COMMAND_SCREEN_CLEAR,
+    COMMAND_WIREFRAME,
     COMMAND_DRAW_START,
     COMMAND_DRAW_END,
     COMMAND_CLEANUP,
@@ -135,6 +137,8 @@ void gpu_draw_end(gpu* gpu);
 void gpu_clear_screen(gpu* gpu);
 
 void gpu_draw_skybox(gpu* gpu, mat4 view, mat4 projection, vec3 translate);
+
+void gpu_cycle_wireframe(gpu * gpu);
 
 //shaders
 void gpu_shader_init(gpu* gpu, const char * vertexPath, const char * fragmentPath, const char * name);

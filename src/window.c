@@ -41,6 +41,9 @@ void window_process_input(GLFWwindow *window, float delta_time)
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS){
         glfwSetWindowShouldClose(window, true);
     }
+    if(glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS){
+        gpu_cycle_wireframe(w->gpu);
+    }
 
     camera_process_input(w->cam, window, delta_time);
 }

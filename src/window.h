@@ -3,11 +3,13 @@
 #include <GLFW/glfw3.h>
 #include <stdbool.h>
 #include <camera.h>
+#include <gpu.h>
 #include <player.h>
 
 typedef struct window_data {
     camera * cam;
     player * player;
+    gpu * gpu;
     double mouse_last_x;
     double mouse_last_y;
     bool mouse_first;

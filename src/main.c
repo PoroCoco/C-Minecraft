@@ -102,6 +102,7 @@ int main(int argc, char const *argv[])
     player * player = player_init(cam, w);
     window_data * window_data = glfwGetWindowUserPointer(window);
     window_data->player = player;
+    window_data->gpu = gpu;
     
     // Render loop
     unsigned int frame_count = 0;

@@ -200,10 +200,11 @@ gpu * gpu_init(atlas * atlas){
 
     // Setting some GL options
     DEBUG_GL(glEnable(GL_DEPTH_TEST));
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK); 
+    // glEnable(GL_CULL_FACE);
+    // glCullFace(GL_BACK); 
     // Wireframe
-    // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE);
+    gpu->wireframe_mode = GL_FILL;
+    glPolygonMode( GL_FRONT_AND_BACK, gpu->wireframe_mode);
 
     // skybox init
     gpu_load_cubemap(gpu);
@@ -376,6 +377,22 @@ void _gpu_shader_set_transform_matrices(gpu* gpu, struct gpu_command_shader_tran
     shader_set_transform_matrices(s, args->uniform_name, (mat4 *) args->value);
 }
 
+void gpu_cycle_wireframe(gpu * gpu){
+    _gpu_create_command(gpu, COMMAND_WIREFRAME, NULL);
+}
+
+void _gpu_cycle_wireframe(gpu * gpu){
+    if(gpu->wireframe_mode == GL_LINE){
+        gpu->wireframe_mode = GL_FILL;
+    }else if(gpu->wireframe_mode == GL_FILL){
+        gpu->wireframe_mode = GL_POINT;
+    }else{
+        gpu->wireframe_mode = GL_LINE;
+    }
+    glPolygonMode( GL_FRONT_AND_BACK, gpu->wireframe_mode);
+}
+
+
 void gpu_render_thread_stop(gpu * gpu){
     _gpu_create_command(gpu, COMMAND_CLEANUP, NULL);
 }
@@ -471,6 +488,11 @@ int render_thread_init(void * thread_args){
                 struct gpu_command_shader_float * args = command->args;
                 _gpu_shader_set_float(gpu, args);
                 break; 
+            }
+            case COMMAND_WIREFRAME:
+            {
+                _gpu_cycle_wireframe(gpu);
+                break;
             }
             case COMMAND_CLEANUP:
             {
