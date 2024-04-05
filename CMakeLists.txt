@@ -4,7 +4,6 @@ project(C-Minecraft C)
 
 set(LIB_FOLDER C:/Programmation/Libraries)
 
-
 find_package(OpenGL REQUIRED)
 
 include_directories(${LIB_FOLDER}/glfw-3.3.9.bin.WIN64/include)
@@ -15,6 +14,7 @@ include_directories(src/)
 
 
 add_executable(main src/main.c src/glad.c src/window.c src/shader.c src/camera.c src/block.c src/chunk.c src/world.c src/player.c src/direction.c src/atlas.c src/generation.c src/gpu.c src/hashtable.c src/stack.c src/fixed_array.c src/queue.c src/frustum.c src/chunk_mesh.c)
+set_property(TARGET main PROPERTY C_STANDARD 11)
 
 if( WIN32 )
     link_directories(${LIB_FOLDER}/glfw-3.3.9.bin.WIN64/lib-vc2022)
