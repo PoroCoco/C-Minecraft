@@ -154,7 +154,7 @@ int main(int argc, char const *argv[])
         // Render each chunk
         float tmp_draw = (float)glfwGetTime();
         fixray_foreach(chunk *c, w->loaded_chunks){
-            if (c->in_frustum){
+            if (c->ready && c->in_frustum){
             mat4 model = GLM_MAT4_IDENTITY_INIT;
             vec3 translate = {(float)(c->x) * CHUNK_X_SIZE, (float)0, (float)(c->z)*CHUNK_Z_SIZE};
             glm_translate(model, translate);

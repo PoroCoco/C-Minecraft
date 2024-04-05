@@ -32,6 +32,7 @@ world * world_init(gpu * gpu){
                 chunk * c = chunk_init(x, z);
                 uint64_t chunk_index = fixray_add(w->loaded_chunks, c);
                 gpu_upload(w->gpu, chunk_index, c);
+                c->ready = true;
             }else{
                 queue_enqueue(w->chunk_to_acquire, (void*)(intptr_t)x);
                 queue_enqueue(w->chunk_to_acquire, (void*)(intptr_t)z);
@@ -174,6 +175,7 @@ int thread_generate_chunk(void * args){
     chunk_generate_mesh(c, w->gpu->atlas);
     uint64_t chunk_index = fixray_add(w->loaded_chunks, c);
     gpu_upload(w->gpu, chunk_index, c);
+    c->ready = true;
     free(args);
     return 0;
 }

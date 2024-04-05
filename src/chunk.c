@@ -44,6 +44,7 @@ chunk * chunk_init(int x, int z){
     for (size_t i = 0; i < CHUNK_SIZE; i++){
         c->block_ids[i] = BLOCK_AIR;
     }
+    c->ready = false;
 
     // printf("init chunk %d,%d\n", x, z);
     for (int z = 0; z < CHUNK_Z_SIZE; z++){

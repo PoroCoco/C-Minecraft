@@ -44,6 +44,7 @@ typedef struct chunk {
     bool in_frustum;
 
     float timestap_generation; // The time when the chunk was generated
+    bool ready;
 } chunk;
 
 chunk * chunk_init(int x, int y);
