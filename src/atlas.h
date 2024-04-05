@@ -5,21 +5,19 @@
 #include <direction.h>
 #include <block.h>
 
-#define ATLAS_TEXTURE_PER_ROW 16
-#define ATLAS_RESOLUTION 256
-#define ATLAS_TEXTURE_RESOLUTION (ATLAS_RESOLUTION/ATLAS_TEXTURE_PER_ROW)
-
-#define ATLAS_PADDING ((ATLAS_TEXTURE_RESOLUTION/10.0f) / (float)ATLAS_RESOLUTION)
-#define ATLAS_STEP (((ATLAS_TEXTURE_RESOLUTION) / (float)ATLAS_RESOLUTION) - ATLAS_PADDING)
+#define ATLAS_TILE_WIDTH 16
+#define ATLAS_TILE_HEIGHT 16
+#define ATLAS_TILE_PER_ROW 16
+#define ATLAS_TILE_PER_COL 16
+#define ATLAS_TOTAL_TILES (ATLAS_TILE_PER_ROW*ATLAS_TILE_PER_COL)
+#define ATLAS_TILE_RESOLUTION (ATLAS_TILE_HEIGHT*ATLAS_TILE_WIDTH)
 
 typedef struct atlas {
-    float textures_coord[BLOCK_COUNT * 4 * 6]; // start_x,start_y,end_x,end_y and 6 faces
-    int resolution;
-    int texture_resolution;
+    int tmp;
 } atlas;
 
-atlas * atlas_init(int resolution);
+atlas * atlas_init(void);
 
-void atlas_get_coord(atlas * a, int block_id, vec2 start, vec2 end, direction d);
+int atlas_get_coord(atlas * a, int block_id, direction d);
 
 void atlas_cleanup(atlas * a);

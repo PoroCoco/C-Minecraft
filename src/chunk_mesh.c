@@ -1,5 +1,6 @@
 #include <chunk_mesh.h>
 #include <assert.h>
+#include <string.h>
 
 bool chunk_is_solid_direction(chunk const * c, int block_index, direction d){
     if (block_index < 0 || block_index > CHUNK_SIZE){
@@ -114,11 +115,7 @@ float * chunk_get_faces_offsets(chunk * c, unsigned int *instance_count){
 }
 
 void add_face_textures(float * faces_textures, direction d, int face_count, int block_index, uint8_t id, atlas * a){
-    vec2 start, end;
-    atlas_get_coord(a, id, start, end, d);
-    faces_textures[(face_count * 2) + 0] = start[0];
-    faces_textures[(face_count * 2) + 1] = start[1];
-
+    faces_textures[face_count] = (float)atlas_get_coord(a, id, d);
 }
 
 void chunk_generate_faces_textures(chunk * c, atlas * a){
@@ -148,4 +145,170 @@ float * chunk_get_faces_textures(chunk * c, unsigned int * instance_count, atlas
     }
     *instance_count = c->faces_count;
     return c->faces_textures;
+}
+
+float * chunk_get_faces_scales(chunk * c, unsigned int * instance_count){
+    *instance_count = c->faces_count;
+    return c->faces_scales;
+}
+
+
+void chunk_generate_mesh(chunk *c, atlas * a){
+    if (c->textures_dirty || c->rotations_dirty || c->faces_dirty){
+        printf("meshing chunk\n");
+        // Allocating the maximum possible faces_offsets size. Doesn't actually allocate too much thanks to virtual memory as we'll not write on much of it  
+        c->faces_rotations = realloc(c->faces_rotations, sizeof(*c->faces_rotations) * 1 * 6 * CHUNK_SIZE); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
+        c->faces_offsets = realloc(c->faces_offsets, sizeof(float) * 3 * 6 * CHUNK_SIZE); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
+        c->faces_textures = realloc(c->faces_textures, sizeof(float) * 1 * 6 * CHUNK_SIZE); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
+        c->faces_scales = realloc(c->faces_scales, sizeof(float) * 2 * 6 * CHUNK_SIZE); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
+        c->faces_count = 0;
+        bool *is_block_face_meshed = malloc(sizeof(*is_block_face_meshed) * CHUNK_SIZE * DIR_COUNT);
+        assert(is_block_face_meshed);
+        memset(is_block_face_meshed, false, CHUNK_SIZE*6);
+
+
+
+        for (int block_index = 0; block_index < CHUNK_SIZE; block_index++){
+        if (block_lookup[c->block_ids[block_index]].is_solid){
+            for (direction d = DIR_START; d < DIR_COUNT; d++){
+                if (!chunk_is_solid_direction(c, block_index, d) && !is_block_face_meshed[block_index*DIR_COUNT + d]){
+                    
+                    // Rotations
+                    c->faces_rotations[c->faces_count] = (float)d;
+                    // Offsets
+                    add_face_offset(c->faces_offsets, d, c->faces_count, block_index);
+                    // Textures
+                    add_face_textures(c->faces_textures, d, c->faces_count, block_index, c->block_ids[block_index], a);
+
+                    chunk_greedymesh_face(c, block_index, d, is_block_face_meshed);
+                    c->faces_count += 1;
+                }
+            }
+        }
+        }
+
+        c->faces_offsets = realloc(c->faces_offsets, sizeof(*c->faces_offsets) * 3 * c->faces_count);
+        c->faces_rotations = realloc(c->faces_rotations, sizeof(*c->faces_rotations) * 1 * c->faces_count);
+        c->faces_textures = realloc(c->faces_textures, sizeof(*c->faces_textures) * 1 * c->faces_count);
+        c->faces_scales = realloc(c->faces_scales, sizeof(*c->faces_scales) * 2 * c->faces_count);
+
+        c->textures_dirty = false;
+        c->faces_dirty = false;
+        c->rotations_dirty = false;
+        free(is_block_face_meshed);
+    }
+}
+
+
+
+
+// Give a already meshed chunk, optimize said mesh using greedy meshing to reduce number of faces
+void chunk_greedymesh_face(chunk * c, int block_index, direction d, bool * is_block_face_meshed){
+    is_block_face_meshed[block_index*DIR_COUNT + d] = true;
+    uint8_t mesh_block_id = c->block_ids[block_index];
+    int up;
+    int down;
+    int right;
+    int left;
+    int up_max;
+    int right_max;
+    int (*bounds_check_up)(int);
+    int (*bounds_check_right)(int);
+
+    if (d == SOUTH || d == NORTH || d == EAST || d == WEST){
+        up = direction_step_value(TOP);
+        down = direction_step_value(BOTTOM);
+        up_max = CHUNK_Y_SIZE;
+        right_max = CHUNK_X_SIZE;
+        bounds_check_up = &chunk_block_y;
+        bounds_check_right = &chunk_block_x; 
+    }else{
+        up = direction_step_value(EAST);
+        down = direction_step_value(WEST);
+        up_max = CHUNK_X_SIZE;
+        right_max = CHUNK_Z_SIZE;
+        bounds_check_up = &chunk_block_x; 
+        bounds_check_right = &chunk_block_z; 
+    }
+
+    switch (d)
+    {
+    case SOUTH:
+        right = direction_step_value(EAST);
+        left = direction_step_value(WEST);
+        break;
+    case NORTH:
+        right = direction_step_value(EAST);
+        left = direction_step_value(WEST);
+        break;
+    case EAST:
+        right = direction_step_value(SOUTH);
+        left = direction_step_value(NORTH);
+        break;
+    case WEST:
+        right = direction_step_value(SOUTH);
+        left = direction_step_value(NORTH);
+        break;
+    case TOP:
+        right = direction_step_value(SOUTH);
+        left = direction_step_value(NORTH);
+        break;
+    case BOTTOM:
+        right = direction_step_value(SOUTH);
+        left = direction_step_value(NORTH);
+        break;
+    }
+
+    int scale_up = 1;
+    is_block_face_meshed[block_index*DIR_COUNT + d] = false;
+    while(bounds_check_up(block_index) != up_max){
+        int new_block_index = block_index + scale_up * up;
+        if (bounds_check_up(new_block_index) <= bounds_check_up(block_index)) break;
+        // if the above block face is the same as you and available
+        if (c->block_ids[new_block_index] == mesh_block_id && !chunk_is_solid_direction(c, new_block_index, d) && !is_block_face_meshed[new_block_index*DIR_COUNT + d]){
+            is_block_face_meshed[new_block_index*DIR_COUNT + d] = true;
+            scale_up++;
+        }else{
+            break;
+        }
+    }
+
+    int scale_right = 1;
+    while(bounds_check_right(block_index) != right_max){
+        bool worked = true;
+        // have to check every block on the new column
+        for (int height = 0; height < scale_up; height++){
+            int new_block_index = block_index + height * up;
+            new_block_index += scale_right * right;
+            if (bounds_check_right(new_block_index) <= bounds_check_right(block_index)){
+                worked = false;
+                break;
+            }
+            if (c->block_ids[new_block_index] == mesh_block_id && !chunk_is_solid_direction(c, new_block_index, d) && !is_block_face_meshed[new_block_index*DIR_COUNT + d]){
+                continue;
+            }else{
+                worked = false;
+                break;
+            }
+        }
+        if (!worked){
+            break;
+        }
+        for (int height = 0; height < scale_up; height++){
+            int new_block_index = block_index + height * up;
+            new_block_index += scale_right * right;
+            is_block_face_meshed[new_block_index*DIR_COUNT + d] = true;
+        }
+
+        scale_right++;
+    }
+
+
+    if (d == TOP || d == BOTTOM){
+        c->faces_scales[c->faces_count*2 + 0] = (float)scale_up;
+        c->faces_scales[c->faces_count*2 + 1] = (float)scale_right;
+    }else{
+        c->faces_scales[c->faces_count*2 + 0] = (float)scale_right;
+        c->faces_scales[c->faces_count*2 + 1] = (float)scale_up;
+    }
 }

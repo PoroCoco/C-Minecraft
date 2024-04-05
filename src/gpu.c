@@ -7,12 +7,12 @@
 #include <stb_image.h>
 
 static const float vertices_face_south[] = {
-    0.f, 0.f,  1.f,  0.0f, 0.0f,
-    1.f, 0.f,  1.f,  ATLAS_STEP, 0.0f,
-    1.f,  1.f,  1.f,  ATLAS_STEP, ATLAS_STEP,
-    1.f,  1.f,  1.f,  ATLAS_STEP, ATLAS_STEP,
-    0.f,  1.f,  1.f,  0.0f, ATLAS_STEP,
-    0.f, 0.f,  1.f,  0.0f, 0.0f,
+    0.f, 0.f,  1.f,
+    1.f, 0.f,  1.f,
+    1.f,  1.f,  1.f,
+    1.f,  1.f,  1.f,
+    0.f,  1.f,  1.f,
+    0.f, 0.f,  1.f
 };
 
 float skybox_vertices[] = {
@@ -148,12 +148,10 @@ gpu * gpu_init(atlas * atlas){
         // setting its attributes
         DEBUG_GL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, ATTRIBUTE_PER_VERTEX * sizeof(float), (void*)0));
         DEBUG_GL(glEnableVertexAttribArray(0));
-        DEBUG_GL(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, ATTRIBUTE_PER_VERTEX * sizeof(float), (void*)(3 * sizeof(float))));
-        DEBUG_GL(glEnableVertexAttribArray(1));
     }
 
     // Create the Instances Buffer Attributes
-    const unsigned int attribute_per_instance = 6; // x,y,z; texturex,texturey; position_index;
+    const unsigned int attribute_per_instance = 7; // x,y,z; textureId; position_index; scaleRIGHT,scaleUP;
     DEBUG_GL(glGenBuffers(TOTAL_CHUNKS, gpu->IBA));
     for (size_t i = 0; i < TOTAL_CHUNKS; i++)
     {
@@ -161,42 +159,64 @@ gpu * gpu_init(atlas * atlas){
         glBindBuffer(GL_ARRAY_BUFFER, gpu->IBA[i]);
         // Pre-Allocate the buffer
         DEBUG_GL(glBufferData(GL_ARRAY_BUFFER, MAX_FACE_IN_CHUNK * sizeof(float) * attribute_per_instance, NULL, GL_STATIC_DRAW)); 
-        DEBUG_GL(glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0));
+        // Offsets
+        DEBUG_GL(glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0));
+        DEBUG_GL(glEnableVertexAttribArray(1));
+        DEBUG_GL(glVertexAttribDivisor(1, 1));
+        // Textures
+        DEBUG_GL(glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 1 * sizeof(float), (void*)(3 * MAX_FACE_IN_CHUNK * sizeof(float))));
         DEBUG_GL(glEnableVertexAttribArray(2));
         DEBUG_GL(glVertexAttribDivisor(2, 1));
-        DEBUG_GL(glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)(3 * MAX_FACE_IN_CHUNK * sizeof(float))));
+        // Position index
+        DEBUG_GL(glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 1 * sizeof(int), (void*)(4 * MAX_FACE_IN_CHUNK * sizeof(float)))); //Todo change to int to float
         DEBUG_GL(glEnableVertexAttribArray(3));
         DEBUG_GL(glVertexAttribDivisor(3, 1));
-        DEBUG_GL(glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, 1 * sizeof(int), (void*)(5 * MAX_FACE_IN_CHUNK * sizeof(float))));
+        // Scales
+        DEBUG_GL(glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)(5 * MAX_FACE_IN_CHUNK * sizeof(float))));
         DEBUG_GL(glEnableVertexAttribArray(4));
         DEBUG_GL(glVertexAttribDivisor(4, 1));
     }
 
     // Texture loading and generation
     stbi_set_flip_vertically_on_load(true);  
-    unsigned int texture1;
-    DEBUG_GL(glGenTextures(1, &texture1));
-    DEBUG_GL(glBindTexture(GL_TEXTURE_2D, texture1)); 
+    unsigned int atlas_texture;
+    DEBUG_GL(glGenTextures(1, &atlas_texture));
+    DEBUG_GL(glBindTexture(GL_TEXTURE_2D_ARRAY, atlas_texture)); 
     // Setting up texture filtering (when object is bigger/smaller than texture which pixel do we take from the texture image)
-    DEBUG_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));	
-    DEBUG_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-    DEBUG_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-    DEBUG_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+    DEBUG_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT));	
+    DEBUG_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT));
+    DEBUG_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+    DEBUG_GL(glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
     int width, height, nrChannels;
-    const char * texture1_path ="../textures/atlas.png";
-    unsigned char *data = stbi_load(texture1_path, &width, &height, &nrChannels, 0);
+    const char * atlas_texture_path ="../textures/atlas.png";
+    unsigned char *data = stbi_load(atlas_texture_path, &width, &height, &nrChannels, 0);
+    int tile_x_resolution = ATLAS_TILE_WIDTH;
+    int tile_y_resolution = ATLAS_TILE_HEIGHT;
+    DEBUG_GL(glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB, width/tile_x_resolution, height/tile_y_resolution, ATLAS_TOTAL_TILES, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL));
     if (data){
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
+        // Upload each tile from the atlas by getting the tile data from the atlas memory
+        for (size_t tile = 0; tile < tile_x_resolution*tile_y_resolution; tile++){
+            unsigned char *tile_data = malloc(sizeof(*tile_data) * tile_x_resolution*tile_y_resolution*nrChannels);
+
+            for (size_t tile_row = 0; tile_row < tile_y_resolution; tile_row++){
+                memcpy(tile_data + tile_row*tile_x_resolution*nrChannels, data + (tile/ATLAS_TILE_PER_COL * width*tile_y_resolution*nrChannels) + ((tile%ATLAS_TILE_PER_ROW) * tile_x_resolution*nrChannels) + (tile_row*width*nrChannels), tile_x_resolution*nrChannels);
+            }
+            
+            DEBUG_GL(glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0,
+                            0, 0, tile,
+                            tile_x_resolution, tile_y_resolution, 1,
+                            GL_RGB, GL_UNSIGNED_BYTE, tile_data));
+            free(tile_data);
+        }
+        
     }else{
-        fprintf(stderr, "Failed to load a texture : %s\n", texture1_path);
+        fprintf(stderr, "Failed to load a texture : %s\n", atlas_texture_path);
     }
+    DEBUG_GL(glGenerateMipmap(GL_TEXTURE_2D_ARRAY));
     stbi_image_free(data);
     printf("textures created\n");
 
     DEBUG_GL(glActiveTexture(GL_TEXTURE0));
-    DEBUG_GL(glBindTexture(GL_TEXTURE_2D, texture1));
-
 
     // Setting some GL options
     DEBUG_GL(glEnable(GL_DEPTH_TEST));
@@ -204,7 +224,8 @@ gpu * gpu_init(atlas * atlas){
     // glCullFace(GL_BACK); 
     // Wireframe
     gpu->wireframe_mode = GL_FILL;
-    glPolygonMode( GL_FRONT_AND_BACK, gpu->wireframe_mode);
+    DEBUG_GL(glPolygonMode(GL_FRONT_AND_BACK, gpu->wireframe_mode));
+    DEBUG_GL(glLineWidth(5.f));
 
     // skybox init
     gpu_load_cubemap(gpu);
@@ -243,17 +264,24 @@ void gpu_upload(gpu* gpu, uint64_t chunk_index, chunk *c){
 void _gpu_upload(gpu* gpu, uint64_t chunk_index, chunk *c){
     DEBUG_GL(glBindVertexArray(gpu->VAO[chunk_index]));
     DEBUG_GL(glBindBuffer(GL_ARRAY_BUFFER, gpu->IBA[chunk_index]));
+    if (c->textures_dirty || c->rotations_dirty || c->faces_dirty){
+        chunk_generate_mesh(c, gpu->atlas);
+    }
     float * instaces_offsets = chunk_get_faces_offsets(c, &(gpu->instances_count[chunk_index]));
     assert(MAX_FACE_IN_CHUNK > gpu->instances_count[chunk_index]); // Need to increase the max face per chunk
     DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float)*3*gpu->instances_count[chunk_index], instaces_offsets));
 
     float * textures_start = chunk_get_faces_textures(c, &(gpu->instances_count[chunk_index]), gpu->atlas);
     assert(MAX_FACE_IN_CHUNK > gpu->instances_count[chunk_index]); // Need to increase the max face per chunk
-    DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*MAX_FACE_IN_CHUNK*3, sizeof(float)*2*gpu->instances_count[chunk_index], textures_start));
+    DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*MAX_FACE_IN_CHUNK*3, sizeof(float)*1*gpu->instances_count[chunk_index], textures_start));
 
     float * faces_rotations = chunk_get_faces_rotations(c, &(gpu->instances_count[chunk_index]));
     assert(MAX_FACE_IN_CHUNK > gpu->instances_count[chunk_index]); // Need to increase the max face per chunk
-    DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*MAX_FACE_IN_CHUNK*5, sizeof(float)*1*gpu->instances_count[chunk_index], faces_rotations));
+    DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*MAX_FACE_IN_CHUNK*4, sizeof(float)*1*gpu->instances_count[chunk_index], faces_rotations));
+
+    float * faces_scales = chunk_get_faces_scales(c, &(gpu->instances_count[chunk_index]));
+    assert(MAX_FACE_IN_CHUNK > gpu->instances_count[chunk_index]); // Need to increase the max face per chunk
+    DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, sizeof(float)*MAX_FACE_IN_CHUNK*5, sizeof(float)*2*gpu->instances_count[chunk_index], faces_scales));
 }
 
 void gpu_draw(gpu* gpu, uint64_t index){

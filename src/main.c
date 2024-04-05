@@ -77,7 +77,7 @@ int main(int argc, char const *argv[])
 {
     srand(654);
     camera * cam = camera_init();
-    atlas * atlas = atlas_init(ATLAS_RESOLUTION);
+    atlas * atlas = atlas_init();
     gpu * gpu;
     queue * command_queue_handle;
     GLFWwindow* window;
@@ -112,6 +112,7 @@ int main(int argc, char const *argv[])
     printf("starting render loop\n");
     while(!window_should_close(window))
     {
+        // gpu_shader_reload(gpu); // Allow realtime shader modification
         float time_frame_begin = (float)glfwGetTime();
         float current_frame_time = (float)glfwGetTime();
         delta_time = current_frame_time - last_frame_time;

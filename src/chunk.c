@@ -91,6 +91,7 @@ chunk * chunk_init(int x, int z){
     c->textures_dirty = true;
     c->faces_rotations = NULL;
     c->rotations_dirty = true;
+    c->faces_scales = NULL;
     c->in_frustum = false;
     return c;
 }
@@ -98,9 +99,10 @@ chunk * chunk_init(int x, int z){
 size_t chunk_sizeof(chunk * c){
     size_t size = 0;
     size += sizeof(c->block_ids);
-    size += 2 * c->faces_count * sizeof(*(c->faces_textures));
+    size += 1 * c->faces_count * sizeof(*(c->faces_textures));
     size += 3 * c->faces_count * sizeof(*(c->faces_offsets));
     size += 1 * c->faces_count * sizeof(*(c->faces_rotations));
+    size += 2 * c->faces_count * sizeof(*(c->faces_scales));
     return size;
 }
 
@@ -188,5 +190,6 @@ void chunk_cleanup(chunk * c){
     free(c->faces_rotations);
     free(c->faces_textures);
     free(c->faces_offsets);
+    free(c->faces_scales);
     free(c);
 }

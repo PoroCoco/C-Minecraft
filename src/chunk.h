@@ -14,15 +14,15 @@
 #define CHUNK_SIZE (CHUNK_LAYER_SIZE * CHUNK_Y_SIZE)
 
 
-// x,y,z , texStepX,texStepY
-#define ATTRIBUTE_PER_VERTEX 5
+// x,y,z
+#define ATTRIBUTE_PER_VERTEX 3
 #define VERTEX_PER_FACE 4
 // Number of floats per face
 #define FACE_FLOAT_COUNT (ATTRIBUTE_PER_VERTEX * VERTEX_PER_FACE)
 // Number of bytes per face
 #define FACE_BYTES (sizeof(float) * FACE_FLOAT_COUNT)
 
-#define MAX_FACE_IN_CHUNK 100000
+#define MAX_FACE_IN_CHUNK 25000
 
 #define RENDER_DISTANCE 8
 #define WORLD_CHUNKS_LENGTH (RENDER_DISTANCE*2)
@@ -37,6 +37,7 @@ typedef struct chunk {
     float * faces_offsets; // vec3
     float * faces_textures;
     float * faces_rotations;
+    float * faces_scales;       // pairs of int values for each face specifying the x and y scale
     bool faces_dirty;
     bool textures_dirty;
     bool rotations_dirty;
