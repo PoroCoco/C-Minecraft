@@ -1,6 +1,9 @@
 # Personnals
-/build
+/build*
+*.c
+work.txt
 /.vscode
+textures/atlas.xcf
 
 # Prerequisites
 *.d
