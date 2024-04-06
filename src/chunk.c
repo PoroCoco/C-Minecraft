@@ -82,34 +82,22 @@ chunk * chunk_init(int x, int z){
         }
         // printf("\n");
     }
-    // c->blocks[0] = block_create(BLOCK_DIRT);
     c->timestap_generation = (float)glfwGetTime();
 
-    c->faces_offsets = NULL;
     c->faces_count = 0;
-    c->faces_dirty = true;
-    c->faces_textures = NULL;
-    c->textures_dirty = true;
-    c->faces_rotations = NULL;
-    c->rotations_dirty = true;
-    c->faces_scales = NULL;
+    c->faces_packed_data = NULL;
+    c->faces_packed_data = realloc(c->faces_packed_data, sizeof(c->faces_packed_data) * PACKED_4BYTES_COUNT * 6 * MAX_FACE_IN_CHUNK/4); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
+    c->mesh_dirty = true;
+
     c->in_frustum = false;
 
-
-    c->faces_rotations = realloc(c->faces_rotations, sizeof(*c->faces_rotations) * 1 * 6 * MAX_FACE_IN_CHUNK/4); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
-    c->faces_offsets = realloc(c->faces_offsets, sizeof(float) * 3 * 6 * MAX_FACE_IN_CHUNK/4); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
-    c->faces_textures = realloc(c->faces_textures, sizeof(float) * 1 * 6 * MAX_FACE_IN_CHUNK/4); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
-    c->faces_scales = realloc(c->faces_scales, sizeof(float) * 2 * 6 * MAX_FACE_IN_CHUNK/4); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
     return c;
 }
 
 size_t chunk_sizeof(chunk * c){
     size_t size = 0;
     size += sizeof(c->block_ids);
-    size += 1 * c->faces_count * sizeof(*(c->faces_textures));
-    size += 3 * c->faces_count * sizeof(*(c->faces_offsets));
-    size += 1 * c->faces_count * sizeof(*(c->faces_rotations));
-    size += 2 * c->faces_count * sizeof(*(c->faces_scales));
+    size += 2 * c->faces_count * sizeof(*(c->faces_packed_data));
     return size;
 }
 
@@ -145,9 +133,7 @@ void chunk_add_block(chunk * c, uint8_t block_id, int index){
     }
 
     c->block_ids[index] = block_id;
-    c->textures_dirty = true; // Brute force solution, need to make a smarter update 
-    c->faces_dirty = true; // Brute force solution, need to make a smarter update 
-    c->rotations_dirty = true; // Brute force solution, need to make a smarter update 
+    c->mesh_dirty = true; // Brute force solution, need to make a smarter update 
 }
 
 // ToDo : OPTI
@@ -158,9 +144,7 @@ void chunk_remove_block(chunk * c, int index){
     }
 
     c->block_ids[index] = BLOCK_AIR;
-    c->textures_dirty = true; // Brute force solution, need to make a smarter update 
-    c->faces_dirty = true; // Brute force solution, need to make a smarter update 
-    c->rotations_dirty = true; // Brute force solution, need to make a smarter update 
+    c->mesh_dirty = true; // Brute force solution, need to make a smarter update 
 }
 
 float chunk_norm_pos_x(chunk * c, float x){
@@ -194,9 +178,6 @@ uint64_t chunk_get_id(chunk * c){
 }
 
 void chunk_cleanup(chunk * c){
-    free(c->faces_rotations);
-    free(c->faces_textures);
-    free(c->faces_offsets);
-    free(c->faces_scales);
+    free(c->faces_packed_data);
     free(c);
 }

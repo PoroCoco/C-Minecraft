@@ -9,4 +9,5 @@ float * chunk_get_faces_rotations(chunk * c, unsigned int * instance_count);
 float * chunk_get_faces_scales(chunk * c, unsigned int * instance_count);
 
 void chunk_greedymesh_face(chunk * c, int block_index, direction d, bool * is_block_meshed);
+uint32_t chunk_get_mesh(chunk *c, atlas * a);
 void chunk_generate_mesh(chunk *c, atlas * a);

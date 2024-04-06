@@ -9,8 +9,7 @@
 #include <fixed_array.h>
 #include <queue.h>
 
-#define CHUNK_LOAD_PER_FRAME 4
-
+#define CHUNK_LOAD_PER_FRAME 8
 
 typedef struct world {
     gpu* gpu;

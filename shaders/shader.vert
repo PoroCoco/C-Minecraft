@@ -1,10 +1,7 @@
 #version 330 core
 
 layout (location = 0) in vec3 inPos;    
-layout (location = 1) in vec3 inPosOffet;           //Instanced
-layout (location = 2) in float inTexId;             //Instanced
-layout (location = 3) in float inRotationIndex;     //Instanced
-layout (location = 4) in vec2 inScale;              //Instanced
+layout (location = 1) in ivec2 inInstancePackedData;    //Instanced
 
 uniform mat4 model;
 uniform mat4 view;
@@ -23,9 +20,14 @@ out float texLight;
 */
 void main()
 {
-    vec3 scaledPos = inPos;
+    vec3 inPosOffet = vec3( (inInstancePackedData.x >> 0) & 0x3F,
+                            (inInstancePackedData.x >> 6) & 0x7F,
+                            (inInstancePackedData.x >> 13) & 0x3F);
+    float inTexId = ((inInstancePackedData.x >> 19) & 0xFF);
+    float inRotationIndex = ((inInstancePackedData.x >> 27) & 0x7);
+    vec2 inScale = vec2(((inInstancePackedData.y >> 0) & 0x7F) +1,
+                        ((inInstancePackedData.y >> 7) & 0x7F) +1);
 
-    texCoord = vec3(0,0,0);
 
     // Translate vertex texture given the greedy meshing scale
     if (gl_VertexID == 1){
@@ -36,10 +38,13 @@ void main()
         texCoord = vec3(0,  inScale.y , inTexId);
     }else if (gl_VertexID == 5 || gl_VertexID == 0){
         texCoord = vec3(0, 0, inTexId);
+    }else{
+        texCoord = vec3(0,0,0);
     }
 
 
     // Translate vertex pos given the greedy meshing scale
+    vec3 scaledPos = inPos;
     if (int(inRotationIndex) == 2 || int(inRotationIndex) == 4 ){ // North or East
         if (gl_VertexID == 4){
             scaledPos = vec3(-inScale.x+1, inScale.y, inPos.z);

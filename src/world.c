@@ -275,7 +275,7 @@ chunk * world_get_loaded_chunk(world *w, int x, int z){
 void world_send_update(world *w){
     // Todo : add a stack to world and when a chunk is modified in world, in add the index to the stack, then on update empties stack and update each chunk to the gpu;
     fixray_foreach(chunk *c, w->loaded_chunks){
-        if (c->faces_dirty || c->faces_dirty || c->rotations_dirty){
+        if (c->mesh_dirty){
             uint64_t chunk_index = fixray_get_index(w->loaded_chunks, c);
             gpu_upload(w->gpu, chunk_index, c);
         }
