@@ -1,6 +1,7 @@
 #include <chunk_mesh.h>
 #include <assert.h>
 #include <string.h>
+#include <timing.h>
 
 bool chunk_is_solid_direction(chunk const * c, int block_index, direction d){
     if (block_index < 0 || block_index > CHUNK_SIZE){
@@ -155,11 +156,6 @@ float * chunk_get_faces_scales(chunk * c, unsigned int * instance_count){
 
 void chunk_generate_mesh(chunk *c, atlas * a){
     if (c->textures_dirty || c->rotations_dirty || c->faces_dirty){
-        // Allocating the maximum possible faces_offsets size. Doesn't actually allocate too much thanks to virtual memory as we'll not write on much of it  
-        c->faces_rotations = realloc(c->faces_rotations, sizeof(*c->faces_rotations) * 1 * 6 * CHUNK_SIZE); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
-        c->faces_offsets = realloc(c->faces_offsets, sizeof(float) * 3 * 6 * CHUNK_SIZE); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
-        c->faces_textures = realloc(c->faces_textures, sizeof(float) * 1 * 6 * CHUNK_SIZE); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
-        c->faces_scales = realloc(c->faces_scales, sizeof(float) * 2 * 6 * CHUNK_SIZE); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
         c->faces_count = 0;
         bool *is_block_face_meshed = malloc(sizeof(*is_block_face_meshed) * CHUNK_SIZE * DIR_COUNT);
         assert(is_block_face_meshed);
@@ -185,11 +181,6 @@ void chunk_generate_mesh(chunk *c, atlas * a){
             }
         }
         }
-
-        c->faces_offsets = realloc(c->faces_offsets, sizeof(*c->faces_offsets) * 3 * c->faces_count);
-        c->faces_rotations = realloc(c->faces_rotations, sizeof(*c->faces_rotations) * 1 * c->faces_count);
-        c->faces_textures = realloc(c->faces_textures, sizeof(*c->faces_textures) * 1 * c->faces_count);
-        c->faces_scales = realloc(c->faces_scales, sizeof(*c->faces_scales) * 2 * c->faces_count);
 
         c->textures_dirty = false;
         c->faces_dirty = false;

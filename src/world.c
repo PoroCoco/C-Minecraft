@@ -151,9 +151,10 @@ void world_update_discarded(world * w, chunk ** discarded){
         fixray_remove_from_index(w->loaded_chunks, chunk_index);
 
         gpu_unload(w->gpu, chunk_index);
-        if (!chunk_in_cache(w, c)){
-            world_append_chunk_cache(w, c);
-        }
+        // if (!chunk_in_cache(w, c)){
+        //     world_append_chunk_cache(w, c);
+        // }
+        chunk_cleanup(c);
 
         index++;
     }
@@ -167,11 +168,11 @@ int thread_generate_chunk(void * args){
     int z = chunk_args->z;
     world *w = chunk_args->w;
     chunk * c;
-    if (chunk_in_cache_pos(w, x, z)){
-        c = world_get_chunk_cache(w, x, z);
-    }else{
+    // if (chunk_in_cache_pos(w, x, z)){
+    //     c = world_get_chunk_cache(w, x, z);
+    // }else{
         c = chunk_init(x, z);
-    }
+    // }
     chunk_generate_mesh(c, w->gpu->atlas);
     uint64_t chunk_index = fixray_add(w->loaded_chunks, c);
     gpu_upload(w->gpu, chunk_index, c);
@@ -211,7 +212,7 @@ bool world_update_position(world * w, float x, float z){
     acquired[0] = INT_MAX;
 
 
-    printf("center chunk faces %u, total sizeof in bytes : %zu\n", w->center_chunk->faces_count, chunk_sizeof(w->center_chunk));
+    // printf("center chunk faces %u, total sizeof in bytes : %zu\n", w->center_chunk->faces_count, chunk_sizeof(w->center_chunk));
     // get last chunk
     int count = 0;
     while (!queue_is_empty(w->chunk_to_acquire) && count < CHUNK_LOAD_PER_FRAME){
@@ -233,7 +234,7 @@ bool world_update_position(world * w, float x, float z){
 
     // ToDo : just like the acquired chunks this could be computed by a function instead of looping
     fixray_foreach(chunk *c, w->loaded_chunks){
-        if (!chunk_in_range(c, new_center_x, new_center_z)){
+        if (c->ready && !chunk_in_range(c, new_center_x, new_center_z)){
             discarded[discard_index++] = c;
         }
     }

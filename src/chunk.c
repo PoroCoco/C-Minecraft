@@ -94,6 +94,12 @@ chunk * chunk_init(int x, int z){
     c->rotations_dirty = true;
     c->faces_scales = NULL;
     c->in_frustum = false;
+
+
+    c->faces_rotations = realloc(c->faces_rotations, sizeof(*c->faces_rotations) * 1 * 6 * MAX_FACE_IN_CHUNK/4); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
+    c->faces_offsets = realloc(c->faces_offsets, sizeof(float) * 3 * 6 * MAX_FACE_IN_CHUNK/4); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
+    c->faces_textures = realloc(c->faces_textures, sizeof(float) * 1 * 6 * MAX_FACE_IN_CHUNK/4); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
+    c->faces_scales = realloc(c->faces_scales, sizeof(float) * 2 * 6 * MAX_FACE_IN_CHUNK/4); // This is a wrong max size (Multiply by 6 as a cube have 6 faces)
     return c;
 }
 
