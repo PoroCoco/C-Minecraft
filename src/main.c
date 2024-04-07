@@ -97,7 +97,6 @@ int main(int argc, char const *argv[])
     }
     gpu_shader_reload(gpu);
 
-
     world * w = world_init(gpu);
     player * player = player_init(cam, w);
     window_data * window_data = glfwGetWindowUserPointer(window);
@@ -112,8 +111,6 @@ int main(int argc, char const *argv[])
     printf("starting render loop\n");
     while(!window_should_close(window))
     {
-        // gpu_shader_reload(gpu); // Allow realtime shader modification
-        float time_frame_begin = (float)glfwGetTime();
         float current_frame_time = (float)glfwGetTime();
         delta_time = current_frame_time - last_frame_time;
         last_frame_time = current_frame_time;
@@ -149,6 +146,7 @@ int main(int argc, char const *argv[])
 
         // Applies frustum to world
         world_update_frustum(w, player, fov, (float)WIDTH / (float)HEIGHT, 0.1f, 10000.0f);
+        // gpu_shader_reload(gpu); // Allow realtime shader modification
         float time_misc = (float)glfwGetTime() - tmp_misc; 
 
         // Render each chunk
@@ -160,10 +158,12 @@ int main(int argc, char const *argv[])
             glm_translate(model, translate);
             gpu_shader_set_m4(gpu, "chunk", "model", model);
 
-            // Make chunk fall out of the sky
-            float y_offset = chunk_y_offset_spawn(c->timestap_generation);
-            gpu_shader_set_float(gpu, "chunk", "chunkYOffset", y_offset);
+            // Make chunk fall out of the sky | Todo : current time should be a parameter to only fetch the time once before this loop.
+            // float y_offset = chunk_y_offset_spawn(c->timestap_generation);
+            // gpu_shader_set_float(gpu, "chunk", "chunkYOffset", y_offset);
+
             gpu_draw(gpu, fixray_foreach_count);
+
             }
         }
 
@@ -183,7 +183,6 @@ int main(int argc, char const *argv[])
     // shader_cleanup(skybox);
     camera_cleanup(cam);
     atlas_cleanup(atlas);
-    gpu_cleanup(gpu);
 
     window_cleanup(window);
     return 0;

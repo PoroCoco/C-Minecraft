@@ -88,5 +88,6 @@ bool window_should_close(GLFWwindow* w){
 
 void window_cleanup(GLFWwindow * window){
     free(glfwGetWindowUserPointer(window));
+    glfwDestroyWindow(window);
     glfwTerminate();
 }
