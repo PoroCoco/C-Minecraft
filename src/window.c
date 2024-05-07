@@ -77,6 +77,7 @@ GLFWwindow* window_init(int width, int height, camera * c){
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, window_mouse_callback);
     glfwSetMouseButtonCallback(window, window_mouse_button_callback);
+    glfwSwapInterval(0); // Uncap FPS
 
     return window;
 }
