@@ -162,7 +162,7 @@ int main(int argc, char const *argv[])
             // float y_offset = chunk_y_offset_spawn(c->timestap_generation);
             // gpu_shader_set_float(gpu, "chunk", "chunkYOffset", y_offset);
 
-            gpu_draw(gpu, fixray_foreach_count);
+            gpu_draw_chunk(gpu, fixray_foreach_count);
 
             }
         }
