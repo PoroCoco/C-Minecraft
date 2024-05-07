@@ -223,7 +223,7 @@ gpu * gpu_init(atlas * atlas){
 }
 
 
-void _gpu_create_command(gpu * gpu, enum command_type type, void * args){
+void _gpu_create_command(gpu * gpu, enum command_types type, void * args){
     gpu_command *com = malloc(sizeof(*com));
     assert(com);
     com->type = type;
@@ -256,13 +256,13 @@ void _gpu_upload(gpu* gpu, uint64_t chunk_index, chunk *c){
     DEBUG_GL(glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(int32_t)*PACKED_4BYTES_COUNT*gpu->instances_count[chunk_index], c->faces_packed_data));
 }
 
-void gpu_draw(gpu* gpu, uint64_t index){
+void gpu_draw_chunk(gpu* gpu, uint64_t index){
     struct gpu_command_draw_chunk * args = malloc(sizeof(*args));
     args->index = index;
     _gpu_create_command(gpu, COMMAND_DRAW_CHUNK, (void*) args);
 }
 
-void _gpu_draw(gpu* gpu, struct gpu_command_draw_chunk *args){
+void _gpu_draw_chunk(gpu* gpu, struct gpu_command_draw_chunk *args){
     gpu_set_VAO(gpu, args->index);
     DEBUG_GL(glDrawArraysInstanced(GL_TRIANGLES, 0, 6, gpu->instances_count[args->index]));
 }
@@ -405,6 +405,19 @@ void _gpu_shader_set_float(gpu* gpu, struct gpu_command_shader_float * args){
     shader_set_float(s, args->uniform_name, args->value);
 }
 
+void gpu_shader_set_float4(gpu* gpu, const char * shader_name, const char * uniform_name, vec4 value){
+    struct gpu_command_shader_vec4 * args = malloc(sizeof(*args));
+    glm_vec4_copy(value, args->value);
+    args->shader_name = shader_name;
+    args->uniform_name = uniform_name;
+    _gpu_create_command(gpu, COMMAND_SHADER_SET_FLOAT4, (void*) args);
+}
+
+void _gpu_shader_set_float4(gpu* gpu, struct gpu_command_shader_vec4 * args){
+    shader *s = htb_get(gpu->shaders, _bad_str_hash(args->shader_name));
+    shader_set_float4(s, args->uniform_name, args->value[0], args->value[1], args->value[2], args->value[3]);
+}
+
 void gpu_shader_set_transform_matrices(gpu* gpu, const char * shader_name, const char * uniform_name, mat4* value){
     struct gpu_command_shader_transform_mat * args = malloc(sizeof(*args));
     memcpy(args->value, value, sizeof(float)*4*4*6); //6 4*4 matrices
@@ -474,7 +487,7 @@ int render_thread_init(void * thread_args){
             case COMMAND_DRAW_CHUNK:
             {
                 struct gpu_command_draw_chunk * args = command->args;
-                _gpu_draw(gpu, args);
+                _gpu_draw_chunk(gpu, args);
                 break; 
             }    
             case COMMAND_SCREEN_CLEAR:
@@ -528,6 +541,12 @@ int render_thread_init(void * thread_args){
             {
                 struct gpu_command_shader_float * args = command->args;
                 _gpu_shader_set_float(gpu, args);
+                break; 
+            }
+            case COMMAND_SHADER_SET_FLOAT4:
+            {
+                struct gpu_command_shader_vec4 * args = command->args;
+                _gpu_shader_set_float4(gpu, args);
                 break; 
             }
             case COMMAND_SHADER_CLEANUP:

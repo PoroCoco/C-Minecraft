@@ -53,6 +53,7 @@ enum command_types {
     COMMAND_SHADER_SET_M4,
     COMMAND_SHADER_SET_TRANSFORM_MAT,
     COMMAND_SHADER_SET_FLOAT,
+    COMMAND_SHADER_SET_FLOAT4,
     COMMAND_SHADER_SET_INT,
     COMMAND_SHADER_USE,
     COMMAND_SHADER_CLEANUP,
@@ -84,6 +85,12 @@ struct gpu_command_shader_float {
     const char * shader_name;
     const char * uniform_name;
     float value;
+};
+
+struct gpu_command_shader_vec4 {
+    const char * shader_name;
+    const char * uniform_name;
+    vec4 value;
 };
 
 struct gpu_command_shader_transform_mat {
@@ -129,7 +136,7 @@ void gpu_unload(gpu* gpu, uint64_t chunk_index);
 
 void gpu_upload(gpu* gpu, uint64_t chunk_index, chunk* c);
 
-void gpu_draw(gpu* gpu, uint64_t index);
+void gpu_draw_chunk(gpu* gpu, uint64_t index);
 
 void gpu_draw_start(gpu* gpu);
 
@@ -147,6 +154,7 @@ void gpu_shader_use(gpu* gpu, const char * name);
 void gpu_shader_set_m4(gpu* gpu, const char * shader_name, const char * uniform_name, mat4 value);
 void gpu_shader_set_transform_matrices(gpu* gpu, const char * shader_name, const char * uniform_name, mat4 *value);
 void gpu_shader_set_float(gpu* gpu, const char * shader_name, const char * uniform_name, float value);
+void gpu_shader_set_float4(gpu* gpu, const char * shader_name, const char * uniform_name, vec4 value);
 void gpu_shader_reload(gpu* gpu);
 
 void gpu_cleanup(gpu* gpu);
