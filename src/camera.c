@@ -31,6 +31,7 @@ void camera_mouse_callback(camera * c, double x_offset, double y_offset){
 camera * camera_init(){
     camera * c = malloc(sizeof(*c));
     assert(c);
+    c->speed = 30.f;
     c->yaw = -90.0f;
     c->pitch = 0.0f;
     
@@ -51,7 +52,7 @@ camera * camera_init(){
 }
 
 void camera_process_input(camera * c, GLFWwindow * window, float delta_time){
-    const float cameraSpeed = CAM_SPEED * delta_time; 
+    const float cameraSpeed = c->speed * delta_time; 
     vec3 tmp;
     bool moved = false;
 
@@ -75,12 +76,17 @@ void camera_process_input(camera * c, GLFWwindow * window, float delta_time){
         glm_vec3_muladds(tmp, cameraSpeed, c->cameraPos);
         moved = true;
     }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
+        c->speed = 300.0f;
+    }else{
+        c->speed = 30.0f;
+    }
 
     // Updates the view matrix
     if (moved){
         glm_vec3_add(c->cameraPos, c->cameraFront, tmp);
         glm_lookat(c->cameraPos, tmp, c->cameraUp, c->view);
-        // if (rand()%10 == 0) printf("Position x,z : %.2f,%.2f\n Block %lf,%lf\n", c->cameraPos[0], c->cameraPos[2], chunk_norm_pos_x(NULL,c->cameraPos[0]), chunk_norm_pos_x(NULL,c->cameraPos[2]));
+        // if (rand()%10 == 0) printf("Position x,y,z : %.2f,%.2f,%.2f\n Block %lf,%lf\n", c->cameraPos[0], c->cameraPos[1], c->cameraPos[2], chunk_norm_pos_x(NULL,c->cameraPos[0]), chunk_norm_pos_x(NULL,c->cameraPos[2]));
     }
 }
 
