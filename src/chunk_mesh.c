@@ -38,13 +38,13 @@ bool chunk_is_solid_direction(chunk const * c, int block_index, direction d){
     return block_lookup[c->block_ids[block_index + direction_step_value(d)]].is_solid;
 }
 
-void add_face_offset(int32_t * faces_packed_data, direction d, int face_count, int block_index){
+void add_face_offset(uint32_t * faces_packed_data, direction d, int face_count, int block_index){
     faces_packed_data[face_count*2+0] |= ((uint8_t)chunk_block_x(block_index) << 0); //x
     faces_packed_data[face_count*2+0] |= ((uint8_t)chunk_block_y(block_index) << 6); //y
     faces_packed_data[face_count*2+0] |= ((uint8_t)chunk_block_z(block_index) << 13); //z
 }
 
-void add_face_textures(int32_t * faces_packed_data, direction d, int face_count, int block_index, uint8_t id, atlas * a){
+void add_face_textures(uint32_t * faces_packed_data, direction d, int face_count, int block_index, uint8_t id, atlas * a){
     faces_packed_data[face_count*2+0] |= ((uint8_t)atlas_get_coord(a, id, d) << 19);
 }
 

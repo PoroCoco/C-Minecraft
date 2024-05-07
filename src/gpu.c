@@ -182,10 +182,10 @@ gpu * gpu_init(atlas * atlas){
     DEBUG_GL(glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB, width/tile_x_resolution, height/tile_y_resolution, ATLAS_TOTAL_TILES, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL));
     if (data){
         // Upload each tile from the atlas by getting the tile data from the atlas memory
-        for (size_t tile = 0; tile < tile_x_resolution*tile_y_resolution; tile++){
+        for (int tile = 0; tile < tile_x_resolution*tile_y_resolution; tile++){
             unsigned char *tile_data = malloc(sizeof(*tile_data) * tile_x_resolution*tile_y_resolution*nrChannels);
 
-            for (size_t tile_row = 0; tile_row < tile_y_resolution; tile_row++){
+            for (int tile_row = 0; tile_row < tile_y_resolution; tile_row++){
                 memcpy(tile_data + tile_row*tile_x_resolution*nrChannels, data + (tile/ATLAS_TILE_PER_COL * width*tile_y_resolution*nrChannels) + ((tile%ATLAS_TILE_PER_ROW) * tile_x_resolution*nrChannels) + (tile_row*width*nrChannels), tile_x_resolution*nrChannels);
             }
             
@@ -463,6 +463,7 @@ void gpu_cleanup(gpu* gpu){
 }
 
 int render_thread_init(void * thread_args){
+    printf("render thread is alive and initing\n");
     struct render_thread_args * th_args = thread_args; 
 
     *th_args->window_handle = window_init(WIDTH, HEIGHT, th_args->cam);;
@@ -472,6 +473,7 @@ int render_thread_init(void * thread_args){
     *th_args->ready = true;
 
     // loop on the command queue
+    printf("render thread looping\n");
     bool running = true;
     while(running){
         if(!queue_is_empty(gpu->command_queue)){

@@ -66,7 +66,7 @@ static const mat4 transform_matrices[6] = {
 };
 
 float chunk_y_offset_spawn(float chunk_time){
-    const static float fall_time = 1.0f;
+    static const float fall_time = 1.0f;
     float current_time = (float)glfwGetTime();
     float difference = current_time - chunk_time ;
     if (difference > fall_time) return 0.f;
@@ -81,7 +81,7 @@ int main(int argc, char const *argv[])
     gpu * gpu;
     queue * command_queue_handle;
     GLFWwindow* window;
-    bool render_thread_ready = false;
+    volatile bool render_thread_ready = false;
     thrd_t render_thread;
     struct render_thread_args args = {
         .atlas = atlas,
@@ -93,7 +93,7 @@ int main(int argc, char const *argv[])
     };
     int render_thread_id = thrd_create(&render_thread, render_thread_init, (void*) &args);
     while (!render_thread_ready){
-        int j = 0;
+        
     }
     gpu_shader_reload(gpu);
 

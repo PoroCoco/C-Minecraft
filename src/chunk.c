@@ -13,7 +13,7 @@
 
 void chunk_generate_tree(chunk *c, int x, int z, int y){
     int tree_height = 5;    
-    for (size_t i = 0; i < tree_height; i++){
+    for (int i = 0; i < tree_height; i++){
         c->block_ids[((i+y) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = BLOCK_WOOD;
         if (i>2){
             for (direction d = DIR_START; d < DIR_COUNT; d++){
