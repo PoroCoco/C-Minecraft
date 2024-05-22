@@ -97,12 +97,14 @@ void world_update_frustum(world *w, player *p, float fov, float aspect, float z_
 
     int frustum_count = 0;
     int loaded_count = 0;
+    float total_chunk_memory = 0;
     fixray_foreach(chunk *c, w->loaded_chunks){
         c->in_frustum = chunk_is_in_frustum(&frustum, c);
         if (c->in_frustum){
             frustum_count++;
         }
         loaded_count++;
+        total_chunk_memory += (float)chunk_sizeof(c);
     }
-    // printf("Total chunks : %d, loaded : %d, in frustum %d\n", TOTAL_CHUNKS, loaded_count, frustum_count);
+    printf("Total chunks : %d, loaded : %d, in frustum %d, total memory(GB) : %f\n", TOTAL_CHUNKS, loaded_count, frustum_count, total_chunk_memory/1000000000.f);
 }
