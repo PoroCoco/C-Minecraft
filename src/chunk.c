@@ -101,15 +101,15 @@ size_t chunk_sizeof(chunk * c){
     return size;
 }
 
-int chunk_block_z(int block_index){
+inline int chunk_block_z(int block_index){
     return (block_index % CHUNK_LAYER_SIZE) / CHUNK_X_SIZE;
 }
 
-int chunk_block_y(int block_index){
+inline int chunk_block_y(int block_index){
     return block_index / CHUNK_LAYER_SIZE;
 }
 
-int chunk_block_x(int block_index){
+inline int chunk_block_x(int block_index){
     return (block_index % CHUNK_LAYER_SIZE) % CHUNK_X_SIZE;
 }
 
