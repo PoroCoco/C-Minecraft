@@ -9,7 +9,12 @@
 #include <atlas.h>
 #include <hashtable.h>
 #include <queue.h>
-#include <threads.h>
+#ifdef _WIN32
+    #include <windows.h>
+#elif __linux__
+    #include <pthread.h>
+#endif
+
 
 #define DEBUG_GL(command) do { \
     command; \
@@ -20,8 +25,8 @@
 } while(0)
 
 
-#define WIDTH 2300
-#define HEIGHT 1200
+#define WIDTH 1920
+#define HEIGHT 1080
 
 typedef struct gpu {
     queue * command_queue;
@@ -40,8 +45,14 @@ typedef struct gpu {
     uint32_t skybox_vbo;
     uint32_t skybox_cubemap_texture;
 
-    mtx_t mutex; // OpenGL does work well with multiple threads, therefore only 1 thread is assigned to do all this stuff
-    mtx_t draw_mutex; // mutex locked at beginning of drawing and unlocked once draw commend_end processed
+    #ifdef _WIN32
+        HANDLE mutex;
+        HANDLE draw_mutex;
+    #elif __linux__
+        pthread_mutex_t mutex; // OpenGL does work well with multiple threads, therefore only 1 thread is assigned to do all this stuff
+        pthread_mutex_t draw_mutex; // mutex locked at beginning of drawing and unlocked once draw commend_end processed
+    #endif
+    
     int wireframe_mode;
 } gpu;
 

@@ -2,7 +2,11 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <threads.h>
+#ifdef _WIN32
+    #include <windows.h>
+#elif __linux__
+    #include <pthread.h>
+#endif
 
 typedef struct queue {
     void ** container;
@@ -10,7 +14,11 @@ typedef struct queue {
     uint64_t front;
     uint64_t count;
     uint64_t back;
-    mtx_t mutex;
+    #ifdef _WIN32
+        HANDLE mutex;
+    #elif __linux__
+        pthread_mutex_t mutex;
+    #endif
 } queue;
 
 

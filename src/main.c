@@ -18,11 +18,7 @@
 #include <gpu.h>
 #include <frustum.h>
 #include <timing.h>
-#include <threads.h>
-#ifdef __unix__
 #include <pthread.h>
-#endif
-
 
 
 // These are defined as row major but read as column major ie the translation vector is the last row not the last column
@@ -82,7 +78,7 @@ int main(int argc, char const *argv[])
     queue * command_queue_handle;
     GLFWwindow* window;
     volatile bool render_thread_ready = false;
-    thrd_t render_thread;
+    pthread_t render_thread;
     struct render_thread_args args = {
         .atlas = atlas,
         .command_queue_handle = &command_queue_handle,
@@ -91,7 +87,7 @@ int main(int argc, char const *argv[])
         .cam = cam,
         .window_handle = &window
     };
-    int render_thread_id = thrd_create(&render_thread, render_thread_init, (void*) &args);
+    int render_thread_id = pthread_create(&render_thread, NULL, render_thread_init, (void*) &args);
     while (!render_thread_ready){
         
     }
@@ -175,7 +171,7 @@ int main(int argc, char const *argv[])
         // glFinish();
         float time_draw = (float)glfwGetTime() - tmp_draw;
         frame_count++;
-        printf("Frame time : %f (regen : %f, draw %f, world %f, misc %f)\n", delta_time, time_regen, time_draw, time_world_update, time_misc);
+        // printf("Frame time : %f (regen : %f, draw %f, world %f, misc %f)\n", delta_time, time_regen, time_draw, time_world_update, time_misc);
     }
 
     gpu_render_thread_stop(gpu);

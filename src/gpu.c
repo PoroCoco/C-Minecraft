@@ -69,6 +69,24 @@ const char * cubemap_faces_name[] = {
     "../textures/skybox/space/back.jpg",
 };
 
+
+
+void _gpu_get_lock(void *lock){
+    #ifdef _WIN32
+        WaitForSingleObject(*(HANDLE *)lock, INFINITE);
+    #elif __linux__
+        pthread_mutex_lock((pthread_mutex_t *)lock);
+    #endif
+}
+
+void _gpu_release_lock(void *lock){
+    #ifdef _WIN32
+        ReleaseMutex((*(HANDLE *)lock));
+    #elif __linux__
+        pthread_mutex_unlock((pthread_mutex_t *)lock);
+    #endif
+}
+
 int64_t _bad_str_hash(char * str){
     return str[0];
 }
@@ -129,8 +147,13 @@ gpu * gpu_init(atlas * atlas){
 
     gpu->command_queue = queue_init(128); //Todo : Maybe use a dynamic one instead
 
-    assert(mtx_init(&gpu->mutex, mtx_plain) == thrd_success);
-    assert(mtx_init(&gpu->draw_mutex, mtx_plain) == thrd_success);
+    #ifdef _WIN32
+        gpu->mutex = CreateMutex(NULL, FALSE,NULL);
+        gpu->draw_mutex = CreateMutex(NULL, FALSE,NULL);
+    #elif __linux__
+        pthread_mutex_init(&gpu->mutex, NULL);
+        pthread_mutex_init(&gpu->draw_mutex, NULL);
+    #endif
 
     printf("Starting OpenGL objects creation\n");
     // OpenGL Objects
@@ -280,8 +303,8 @@ void gpu_clear_screen(gpu* gpu){
 
 void gpu_draw_end(gpu* gpu){
     _gpu_create_command(gpu, COMMAND_DRAW_END, NULL);
-    mtx_lock(&gpu->draw_mutex);
-    mtx_unlock(&gpu->draw_mutex);
+    _gpu_get_lock(&gpu->draw_mutex);
+    _gpu_release_lock(&gpu->draw_mutex);
 }
 
 void gpu_draw_start(gpu* gpu){
@@ -455,8 +478,8 @@ void gpu_cleanup(gpu* gpu){
     DEBUG_GL(glDeleteVertexArrays(TOTAL_CHUNKS, gpu->VAO));
     DEBUG_GL(glDeleteBuffers(1, &gpu->VBO_face));
     DEBUG_GL(glDeleteBuffers(TOTAL_CHUNKS, gpu->IBA));
-    mtx_destroy(&gpu->mutex);
-    mtx_destroy(&gpu->draw_mutex);
+    // mutex destroy
+    // mutex_draw destroy
     queue_cleanup(gpu->command_queue);
     htb_cleanup(gpu->shaders, free);
     free(gpu);
@@ -501,12 +524,12 @@ int render_thread_init(void * thread_args){
             {
                 glfwSwapBuffers(*th_args->window_handle);
                 glfwPollEvents();
-                mtx_unlock(&gpu->draw_mutex);
+                _gpu_release_lock(&gpu->draw_mutex);
                 break; 
             }    
             case COMMAND_DRAW_START:
             {
-                mtx_lock(&gpu->draw_mutex);
+                _gpu_get_lock(&gpu->draw_mutex);
                 break; 
             }    
             case COMMAND_SHADER_INIT:

@@ -2,6 +2,24 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+
+void _queue_get_lock(queue* q){
+    #ifdef _WIN32
+        WaitForSingleObject(q->mutex, INFINITE);
+    #elif __linux__
+        pthread_mutex_lock(&q->mutex);
+    #endif
+}
+
+void _queue_release_lock(queue* q){
+    #ifdef _WIN32
+        ReleaseMutex(q->mutex);
+    #elif __linux__
+        pthread_mutex_unlock(&q->mutex);
+    #endif
+}
+
+
 queue * queue_init(uint64_t size){
     queue* q = malloc(sizeof(*q));
     q->container = malloc(sizeof(*q->container) * size);
@@ -9,7 +27,11 @@ queue * queue_init(uint64_t size){
     q->front = 0;
     q->back = 0;
     q->count = 0;
-    mtx_init(&q->mutex, mtx_plain);
+    #ifdef _WIN32
+        q->mutex = CreateMutex(NULL, FALSE,NULL);
+    #elif __linux__
+        pthread_mutex_init(&q->mutex, NULL);
+    #endif
     return q;
 }
 
@@ -22,48 +44,48 @@ bool _queue_is_empty_lock_free(queue const* q){
 }
 
 void queue_enqueue(queue* q, void* value){
-    mtx_lock(&q->mutex);
+    _queue_get_lock(q);
     while(_queue_is_full_lock_free(q)){
         // fprintf(stderr, "Tried to enqueue into a full queue !\n");
-        mtx_unlock(&q->mutex);
-        mtx_lock(&q->mutex);
+        _queue_release_lock(q);
+        _queue_get_lock(q);
     }
     q->container[q->back++] = value;
     q->back = q->back%q->size;
     q->count++;
-    mtx_unlock(&q->mutex);
+    _queue_release_lock(q);
 }
 
 void *queue_dequeue(queue* q){
-    mtx_lock(&q->mutex);
+    _queue_get_lock(q);
     if (_queue_is_empty_lock_free(q)){
         fprintf(stderr, "Tried to dequeue an empty queue !\n");
-        mtx_unlock(&q->mutex);
+        _queue_release_lock(q);
         return NULL;
     }
     void * element = q->container[q->front++];
     q->front = q->front%q->size;
     q->count--;
-    mtx_unlock(&q->mutex);
+    _queue_release_lock(q);
     return element;
 }
 
 bool queue_is_full(queue * q){
-    mtx_lock(&q->mutex);
+    _queue_get_lock(q);
     bool res = ((q->back == q->front) && (q->count > 0));
-    mtx_unlock(&q->mutex);
+    _queue_release_lock(q);
     return res;
 }
 
 bool queue_is_empty(queue * q){
-    mtx_lock(&q->mutex);
+    _queue_get_lock(q);
     bool res = ((q->back == q->front) && (q->count == 0));
-    mtx_unlock(&q->mutex);
+    _queue_release_lock(q);
     return res;
 }
 
 void queue_cleanup(queue* q){
     free(q->container);
-    mtx_destroy(&q->mutex);
+    // mutex destroy
     free(q);
 }

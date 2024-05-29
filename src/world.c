@@ -222,12 +222,12 @@ bool world_update_position(world * w, float x, float z){
             z >= (new_center_z - (RENDER_DISTANCE)) &&
             x < (new_center_x + (RENDER_DISTANCE)) &&
             z < (new_center_z + (RENDER_DISTANCE))){
-            thrd_t thread;
+            pthread_t thread;
             struct thread_chunk_gen_args * chunk_args = malloc(sizeof(*chunk_args));
             chunk_args->w = w;
             chunk_args->x = x;
             chunk_args->z = z;
-            int id = thrd_create(&thread, thread_generate_chunk, chunk_args);
+            int id = pthread_create(&thread, NULL, thread_generate_chunk, chunk_args);
             count++;
         }
     }
