@@ -183,6 +183,8 @@ int main(int argc, char const *argv[])
     // shader_cleanup(skybox);
     camera_cleanup(cam);
     atlas_cleanup(atlas);
+    player_cleanup(player);
+    world_cleanup(w);
 
     window_cleanup(window);
     return 0;

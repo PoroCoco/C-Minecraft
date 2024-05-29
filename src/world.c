@@ -311,5 +311,6 @@ void world_cleanup(world * w){
 
     htb_cleanup(w->cache, (void (*)(void*))chunk_cleanup);
     queue_cleanup(w->chunk_to_acquire);
+    fixray_cleanup(w->loaded_chunks);
     free(w);
 }
