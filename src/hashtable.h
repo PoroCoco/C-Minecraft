@@ -2,12 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-
-#ifdef _WIN32
-#include <windows.h>
-#elif __linux__
 #include <pthread.h>
-#endif
 
 typedef struct bucket{
     void ** values;
@@ -21,12 +16,7 @@ typedef struct hashtable{
     uint64_t size;
     uint64_t used_buckets;
     uint64_t total_entries;
-
-    #ifdef _WIN32
-        HANDLE mutex;
-    #elif __linux__
-        pthread_mutex_t mutex;
-    #endif
+    pthread_mutex_t mutex;
 } htb;
 
 

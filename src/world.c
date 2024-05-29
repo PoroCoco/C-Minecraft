@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <timing.h>
+#include <pthread.h>
 
 #include <cglm/cglm.h> 
 
@@ -162,7 +163,7 @@ void world_update_discarded(world * w, chunk ** discarded){
 }
 
 
-int thread_generate_chunk(void * args){
+void * thread_generate_chunk(void * args){
     struct thread_chunk_gen_args * chunk_args = args;
     int x = chunk_args->x;
     int z = chunk_args->z;

@@ -7,7 +7,6 @@ set(LIB_FOLDER F:/Programmation/Libraries)
 
 include_directories(${LIB_FOLDER}/glfw-3.3.9.bin.WIN64/include)
 include_directories(include/)
-include_directories(include/threads)
 include_directories(lib/)
 include_directories(src/)
 
@@ -26,8 +25,8 @@ if( WIN32 )
         COMMENT "Copying glfw3.dll to executable directory"
     )
 
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra ")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -Wall -Wextra -pthread")
 elseif( UNIX )
     target_link_libraries(main m glfw)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g3 -ggdb -Wall -Wextra")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=thread -pthread -g3 -ggdb -Wall -Wextra")
 endif()

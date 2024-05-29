@@ -6,25 +6,6 @@ void _free_nothing(void * v){
     v = v;
 }
 
-void _fixray_get_lock(fixray* fa){
-    #ifdef _WIN32
-        WaitForSingleObject(fa->mutex, INFINITE);
-    #elif __linux__
-        pthread_mutex_lock(&fa->mutex);
-    #endif
-}
-
-void _fixray_release_lock(fixray* fa){
-    #ifdef _WIN32
-        ReleaseMutex(fa->mutex);
-    #elif __linux__
-        pthread_mutex_unlock(&fa->mutex);
-    #endif
-}
-
-
-
-
 fixray *fixray_init(uint64_t size){
     fixray * fa = malloc(sizeof(*fa));
     fa->size = size;
@@ -37,16 +18,13 @@ fixray *fixray_init(uint64_t size){
     }
 
     fa->element_to_index = htb_init(size);
-    #ifdef _WIN32
-        fa->mutex = CreateMutex(NULL, FALSE,NULL);
-    #elif __linux__
-        pthread_mutex_init(&fa->mutex, NULL);
-    #endif
+    pthread_mutex_init(&fa->mutex, NULL);
+
     return fa;
 }
 
 uint64_t fixray_add(fixray * fa, void * element){
-    _fixray_get_lock(fa);
+    pthread_mutex_lock(&fa->mutex);
     if (stack_is_empty(fa->available_indices)){
         fprintf(stderr, "Tried to insert into an already full fixed array !\n");
         return UINT64_MAX;
@@ -60,7 +38,7 @@ uint64_t fixray_add(fixray * fa, void * element){
     htb_add(fa->element_to_index, (int64_t)element, (void*)index);
     fa->container[index] = element;
     fa->count++;
-    _fixray_release_lock(fa);
+    pthread_mutex_unlock(&fa->mutex);
     return index;
 }
 
@@ -69,13 +47,13 @@ uint64_t fixray_get_index(fixray * fa, void * element){
 }
 
 void fixray_remove_from_index(fixray * fa, uint64_t index){
-    _fixray_get_lock(fa);
+    pthread_mutex_lock(&fa->mutex);
     void * element = fa->container[index];
     fa->container[index] = _fixray_null;
     stack_push(fa->available_indices, (void*)index);
     htb_remove(fa->element_to_index, (int64_t)element);
     fa->count--;
-    _fixray_release_lock(fa);
+    pthread_mutex_unlock(&fa->mutex);
 }
 
 void fixray_remove_element(fixray * fa, void * element){
@@ -91,10 +69,6 @@ void fixray_cleanup(fixray * fa){
     stack_cleanup(fa->available_indices);
     free(fa->container);
     htb_cleanup(fa->element_to_index, _free_nothing);
-    #ifdef _WIN32
-        CloseHandle(fa->mutex);
-    #elif __linux__
-        pthread_mutex_destroy(&fa->mutex);
-    #endif
+    pthread_mutex_destroy(&fa->mutex);
     free(fa);
 }

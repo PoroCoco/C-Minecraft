@@ -29,6 +29,6 @@ void world_unload_chunk(world* w, int x, int z);
 chunk* world_get_loaded_chunk(world* w, int x, int z);
 chunk* world_get_chunk_direction(world* w, chunk const* c, direction d);
 void world_send_update(world* w);
-int thread_generate_chunk(void * args);
+void * thread_generate_chunk(void * args);
 
 void world_cleanup(world* w);

@@ -3,6 +3,7 @@
 #include <stack.h>
 #include <hashtable.h>
 #include <stdint.h>
+#include <pthread.h>
 
 #define _fixray_null ((void*)0x0B00B135)
 
@@ -17,11 +18,7 @@ typedef struct fixray{
     void ** container; 
     uint64_t size;
     uint64_t count;
-    #ifdef _WIN32
-        HANDLE mutex;
-    #elif __linux__
-        pthread_mutex_t mutex;
-    #endif
+    pthread_mutex_t mutex;
 } fixray;
 
 // Loops over each element stored inside the fixed array, skipping the indices with no element
