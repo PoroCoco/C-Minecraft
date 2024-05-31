@@ -250,6 +250,7 @@ void gpu_upload(gpu* gpu, uint64_t chunk_index, chunk *c){
 
 // ToDo: Opti -> use subdata or even map it instead +  Check between static and dynamic perf for the buffer data
 void _gpu_upload(gpu* gpu, uint64_t chunk_index, chunk *c){
+    assert(c->faces_count < MAX_FACE_IN_CHUNK);
     DEBUG_GL(glBindVertexArray(gpu->VAO[chunk_index]));
     DEBUG_GL(glBindBuffer(GL_ARRAY_BUFFER, gpu->IBA[chunk_index]));
     
