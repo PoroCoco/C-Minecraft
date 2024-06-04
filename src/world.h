@@ -14,7 +14,6 @@
 typedef struct world {
     gpu* gpu;
     htb* cache;
-    htb* loaded_chunks_index;
     fixray* loaded_chunks;
     chunk* center_chunk; // chunk in the center of the loaded world, where the player currently is
     queue* chunk_to_acquire;

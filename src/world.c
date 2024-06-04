@@ -176,6 +176,12 @@ void * thread_generate_chunk(void * args){
     // }
     chunk_generate_mesh(c, w->gpu->atlas);
     uint64_t chunk_index = fixray_add(w->loaded_chunks, c);
+    if (chunk_index == UINT64_MAX){
+        printf("aborting chunk adding because already maxed\n");
+        chunk_cleanup(c);
+        free(args);
+        return;
+    }
     gpu_upload(w->gpu, chunk_index, c);
     c->ready = true;
     free(args);

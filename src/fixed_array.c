@@ -27,10 +27,12 @@ uint64_t fixray_add(fixray * fa, void * element){
     pthread_mutex_lock(&fa->mutex);
     if (stack_is_empty(fa->available_indices)){
         fprintf(stderr, "Tried to insert into an already full fixed array !\n");
+        pthread_mutex_unlock(&fa->mutex);
         return UINT64_MAX;
     }
     if (element == _fixray_null){
         fprintf(stderr, "Tried to insert an element that has the same value as the null used ! Actually unlucky :o \n");
+        pthread_mutex_unlock(&fa->mutex);
         return UINT64_MAX;
     }
 
