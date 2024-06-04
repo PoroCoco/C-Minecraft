@@ -16,8 +16,8 @@
 #endif
 
 
-double (*generator_get_noise)(int, int ) = NULL;
-double (*generator_get_noise_tree)(int, int ) = NULL;
+float (*generator_get_noise)(int, int ) = NULL;
+float (*generator_get_noise_tree)(int, int ) = NULL;
 void* generator_lib_handle = NULL;
 
 // 0 unloaded, 1 loaded
@@ -90,16 +90,19 @@ chunk * chunk_init(int x, int z){
     }
     c->ready = false;
 
+    static int water_level = 5;
+    static int moutain_start = 90;
+
     // printf("init chunk %d,%d\n", x, z);
     for (int z = 0; z < CHUNK_Z_SIZE; z++){
         for (int x = 0; x < CHUNK_X_SIZE; x++){
-            double noise_value = (*generator_get_noise)(x + c->x*CHUNK_X_SIZE , z+ c->z*CHUNK_Z_SIZE);
-            int height = (int)((CHUNK_Y_SIZE - 15) * (noise_value));
-            if (height < 30){
-                height = 30;
+            float noise_value = (*generator_get_noise)(x + c->x*CHUNK_X_SIZE , z+ c->z*CHUNK_Z_SIZE);
+            int height = (int)((CHUNK_Y_SIZE - 5) * (noise_value));
+            if (height < water_level){
+                height = water_level;
                 for (int i = height - 1; i > 0 ; i--){
                     uint8_t b;
-                    if ((height-i) < 30){
+                    if ((height-i) < water_level){
                         b = BLOCK_WATER;
                     }else if ((height-i) < height){
                         b = BLOCK_STONE;
@@ -109,18 +112,20 @@ chunk * chunk_init(int x, int z){
             }else{
                 for (int i = height - 1; i > 0 ; i--){
                     uint8_t b;
-                    if ((height - i) < 4 &&  height < 90){
+                    if ((height - i) < 4 &&  height < moutain_start){
                         b = BLOCK_DIRT;
                     }else{
                         b = BLOCK_STONE;
                     }
                     c->block_ids[(i * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = b;
                 }
-                float tree_noise = (*generator_get_noise_tree)(x + c->x*CHUNK_X_SIZE , z+ c->z*CHUNK_Z_SIZE);
-                // printf("%f\t", tree_noise);
-                if (tree_noise > 0.85){ 
-                    chunk_generate_tree(c, x, z, height);               
-                } 
+                if (height < moutain_start){
+                    float tree_noise = (*generator_get_noise_tree)(x + c->x*CHUNK_X_SIZE , z+ c->z*CHUNK_Z_SIZE);
+                    // printf("%f\t", tree_noise);
+                    if (tree_noise > 0.85){ 
+                        chunk_generate_tree(c, x, z, height);               
+                    } 
+                }
             }
             
         }

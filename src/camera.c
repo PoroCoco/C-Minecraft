@@ -77,7 +77,7 @@ void camera_process_input(camera * c, GLFWwindow * window, float delta_time){
         moved = true;
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
-        c->speed = 300.0f;
+        c->speed = 700.0f;
     }else{
         c->speed = 30.0f;
     }
