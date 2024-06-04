@@ -62,6 +62,7 @@ GLFWwindow* window_init(int width, int height, camera * c){
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_SAMPLES, 4);
 
 
     GLFWwindow* window = glfwCreateWindow(width, height, "OpenGL Window", NULL, NULL);

@@ -210,6 +210,7 @@ gpu * gpu_init(atlas * atlas){
     DEBUG_GL(glEnable(GL_DEPTH_TEST));
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK); 
+    glEnable(GL_MULTISAMPLE);
     // Wireframe
     gpu->wireframe_mode = GL_FILL;
     DEBUG_GL(glPolygonMode(GL_FRONT_AND_BACK, gpu->wireframe_mode));
