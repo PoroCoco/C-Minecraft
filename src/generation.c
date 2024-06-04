@@ -10,7 +10,7 @@
 
 
 
-float get_noise_tree(int x, int y){
+double get_noise_tree(int x, int y){
     fnl_state noise = fnlCreateState();
     noise.seed = 4567878;
     noise.noise_type = FNL_NOISE_PERLIN;
@@ -20,13 +20,13 @@ float get_noise_tree(int x, int y){
 }
 
 
-float get_noise(int x, int y){
+double get_noise(int x, int y){
 
     fnl_state noise = fnlCreateState();
     noise.seed = 4567;
     noise.noise_type = FNL_NOISE_PERLIN;
-    // noise.frequency = 0.002f;
-    noise.frequency = 0.005f;
+    noise.frequency = 0.004f;
+    // noise.frequency = 0.005f;
     float noise_val = fnlGetNoise2D(&noise, (float)x, (float)y);
     return (noise_val + 1.f) / 2.0f;
     // // Gather noise data

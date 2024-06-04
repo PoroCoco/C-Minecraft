@@ -93,6 +93,7 @@ int main(int argc, char const *argv[])
     }
     gpu_shader_reload(gpu);
 
+    chunk_hotreload_genetor(false);
     world * w = world_init(gpu);
     player * player = player_init(cam, w);
     window_data * window_data = glfwGetWindowUserPointer(window);
@@ -175,8 +176,6 @@ int main(int argc, char const *argv[])
     }
 
     gpu_render_thread_stop(gpu);
-    // shader_cleanup(s);
-    // shader_cleanup(skybox);
     camera_cleanup(cam);
     atlas_cleanup(atlas);
     player_cleanup(player);

@@ -24,7 +24,7 @@
 
 #define MAX_FACE_IN_CHUNK 25000
 
-#define RENDER_DISTANCE 16
+#define RENDER_DISTANCE 32
 #define WORLD_CHUNKS_LENGTH (RENDER_DISTANCE*2)
 #define TOTAL_CHUNKS (WORLD_CHUNKS_LENGTH * WORLD_CHUNKS_LENGTH)
 
@@ -35,7 +35,7 @@ Instance data packing:
 Data : |OffsetX|OffsetY |OffsetZ|TextureId|RotationIndex|EMPTY|ScaleX|ScaleY|
 Bits : |0-----5|6-----12|13---18|19-----26|27---------29|30-31|0----6|7---13|
 Size : |   6   |    7   |   6   |    8    |      3      |  2  |   7  |   7  |
-Float: |-----------------------FLOAT1-------------------------|------------------FLOAT2------------------|
+Float: |------------------------INT1--------------------------|-------------------INT2-------------------|
 
 Given the chunk sizes, the offsets x,z ranges (0-63) and y (0-127), therefore packed on 6 and 7 bits respectively
 The atlas contains up to 256 textures so the textureId is packed on 8 bits
@@ -100,5 +100,7 @@ int chunk_block_y(int block_index);
 int chunk_block_z(int block_index);
 
 size_t chunk_sizeof(chunk * c);
+
+void chunk_hotreload_genetor(bool reload);
 
 void chunk_cleanup(chunk * c);

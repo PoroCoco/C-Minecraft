@@ -47,6 +47,12 @@ void window_process_input(GLFWwindow *window, float delta_time)
     if(glfwGetKey(window, GLFW_KEY_F5) == GLFW_PRESS){
         gpu_shader_reload(w->gpu);
     }
+    if(glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS){
+        chunk_hotreload_genetor(true);
+        for (volatile size_t i = 0; i < 400000000; i++){ // Just stall to only register 1 input (I swear I'll make a proper input handler)
+            volatile int j = 5 * i;
+        }
+    }
 
     camera_process_input(w->cam, window, delta_time);
 }

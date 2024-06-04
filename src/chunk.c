@@ -11,6 +11,18 @@
 #include <atlas.h>
 #include <generation.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
+
+double (*generator_get_noise)(int, int ) = NULL;
+double (*generator_get_noise_tree)(int, int ) = NULL;
+void* generator_lib_handle = NULL;
+
+// 0 unloaded, 1 loaded
+int generator_lib_state = 0; 
+
 void chunk_generate_tree(chunk *c, int x, int z, int y){
     int tree_height = 5;    
     for (int i = 0; i < tree_height; i++){
@@ -34,6 +46,38 @@ void chunk_generate_tree(chunk *c, int x, int z, int y){
     c->block_ids[((tree_height+y+1) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = BLOCK_LEAF;
 }
 
+void chunk_hotreload_genetor(bool reload){
+    static const char * generator_lib_name = "libworld_gen.dll";
+
+    if (reload && generator_lib_state == 1){
+        FreeLibrary((HMODULE)generator_lib_handle);
+        generator_lib_state = 0;
+        printf("unloaded world generator\n");
+        return;
+    }
+
+    generator_lib_handle = LoadLibrary(generator_lib_name);
+    if (generator_lib_handle == NULL) {
+        fprintf(stderr, "Failed to load the world generator\n");
+        return;
+    }
+    printf("Loaded world generator\n");
+    generator_lib_state = 1;
+
+    generator_get_noise = GetProcAddress(generator_lib_handle, "get_noise");
+    if (generator_get_noise == NULL) {
+        fprintf(stderr, "Failed to load the world generator function : get_noise\n");
+        FreeLibrary(generator_lib_handle);
+        return;
+    }
+
+    generator_get_noise_tree = GetProcAddress(generator_lib_handle, "get_noise_tree");
+    if (generator_get_noise_tree == NULL) {
+        fprintf(stderr, "Failed to load the world generator function : get_noise_tree\n");
+        FreeLibrary(generator_lib_handle);
+        return;
+    }
+}
 
 chunk * chunk_init(int x, int z){
     chunk * c = malloc(sizeof(*c));
@@ -49,7 +93,7 @@ chunk * chunk_init(int x, int z){
     // printf("init chunk %d,%d\n", x, z);
     for (int z = 0; z < CHUNK_Z_SIZE; z++){
         for (int x = 0; x < CHUNK_X_SIZE; x++){
-            float noise_value = get_noise(x + c->x*CHUNK_X_SIZE , z+ c->z*CHUNK_Z_SIZE);
+            double noise_value = (*generator_get_noise)(x + c->x*CHUNK_X_SIZE , z+ c->z*CHUNK_Z_SIZE);
             int height = (int)((CHUNK_Y_SIZE - 15) * (noise_value));
             if (height < 30){
                 height = 30;
@@ -72,7 +116,7 @@ chunk * chunk_init(int x, int z){
                     }
                     c->block_ids[(i * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = b;
                 }
-                float tree_noise = get_noise_tree(x + c->x*CHUNK_X_SIZE , z+ c->z*CHUNK_Z_SIZE);
+                float tree_noise = (*generator_get_noise_tree)(x + c->x*CHUNK_X_SIZE , z+ c->z*CHUNK_Z_SIZE);
                 // printf("%f\t", tree_noise);
                 if (tree_noise > 0.85){ 
                     chunk_generate_tree(c, x, z, height);               
