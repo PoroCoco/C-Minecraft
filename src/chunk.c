@@ -24,6 +24,7 @@ void* generator_lib_handle = NULL;
 int generator_lib_state = 0; 
 
 void chunk_generate_tree(chunk *c, int x, int z, int y){
+    if (x == 0 || x == CHUNK_X_SIZE-1 || z == 0 || z == CHUNK_Z_SIZE-1 ) return;
     int tree_height = 5;    
     for (int i = 0; i < tree_height; i++){
         c->block_ids[((i+y) * CHUNK_LAYER_SIZE) + (z*CHUNK_X_SIZE) + x] = BLOCK_WOOD;
