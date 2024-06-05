@@ -14,7 +14,7 @@
 int raycast_break(player * p, chunk ** final_chunk){
     const float step = 0.05f;
     vec3 origin;
-    glm_vec3_copy(p->cam->cameraPos, origin);
+    glm_vec3_copy(p->cam->cameraWorldPos, origin);
     vec3 direction;
     glm_vec3_copy(p->cam->cameraFront, direction);
     glm_vec3_scale(direction, step, direction);
@@ -56,7 +56,7 @@ int raycast_break(player * p, chunk ** final_chunk){
 int raycast_adjacent(player * p, chunk ** final_chunk, direction *d){
     const float step = 0.05f;
     vec3 origin;
-    glm_vec3_copy(p->cam->cameraPos, origin);
+    glm_vec3_copy(p->cam->cameraWorldPos, origin);
     vec3 direction;
     glm_vec3_copy(p->cam->cameraFront, direction);
     glm_vec3_scale(direction, step, direction);

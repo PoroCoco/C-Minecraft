@@ -116,7 +116,7 @@ int main(int argc, char const *argv[])
         float time_regen = 0.0f;
         float tmp_world_update = (float)glfwGetTime();
         float tmp_regen = 0.0f;
-        if (world_update_position(w, cam->cameraPos[0], cam->cameraPos[2])){
+        if (world_update_position(w, cam->cameraWorldPos[0], cam->cameraWorldPos[2])){
             time_world_update = (float)glfwGetTime() - tmp_world_update;
             tmp_regen = (float)glfwGetTime();
 
@@ -149,7 +149,7 @@ int main(int argc, char const *argv[])
         fixray_foreach(chunk *c, w->loaded_chunks){
             if (c->ready && c->in_frustum){
             mat4 model = GLM_MAT4_IDENTITY_INIT;
-            vec3 translate = {(float)(c->x) * CHUNK_X_SIZE, (float)0, (float)(c->z)*CHUNK_Z_SIZE};
+            vec3 translate = {(float)((c->x - w->center_chunk->x) * CHUNK_X_SIZE), (float)0, (float)((c->z - w->center_chunk->z) * CHUNK_Z_SIZE)};
             glm_translate(model, translate);
             gpu_shader_set_m4(gpu, "chunk", "model", model);
 

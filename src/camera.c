@@ -41,8 +41,10 @@ camera * camera_init(){
 
     vec3 cameraPos = {0.0f, 67.0f, 0.0f};
     vec3 cameraUp = {0.0f, 1.0f, 0.0f};
+    vec3 cameraWorldPos = {0.0f, 67.0f, 0.0f};
     glm_vec3_copy(cameraPos, c->cameraPos);
     glm_vec3_copy(cameraUp, c->cameraUp);
+    glm_vec3_copy(cameraWorldPos, c->cameraWorldPos);
 
     vec3 center;
     glm_vec3_add(c->cameraPos, c->cameraFront, center);
@@ -57,23 +59,23 @@ void camera_process_input(camera * c, GLFWwindow * window, float delta_time){
     bool moved = false;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
-        glm_vec3_muladds(c->cameraFront, cameraSpeed, c->cameraPos);
+        glm_vec3_muladds(c->cameraFront, cameraSpeed, c->cameraWorldPos);
         moved = true;
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
-        glm_vec3_mulsubs(c->cameraFront, cameraSpeed, c->cameraPos);
+        glm_vec3_mulsubs(c->cameraFront, cameraSpeed, c->cameraWorldPos);
         moved = true;
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
         glm_vec3_cross(c->cameraFront, c->cameraUp, tmp);
         glm_vec3_norm(tmp);
-        glm_vec3_mulsubs(tmp, cameraSpeed, c->cameraPos);
+        glm_vec3_mulsubs(tmp, cameraSpeed, c->cameraWorldPos);
         moved = true;
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
         glm_vec3_cross(c->cameraFront, c->cameraUp, tmp);
         glm_vec3_norm(tmp);
-        glm_vec3_muladds(tmp, cameraSpeed, c->cameraPos);
+        glm_vec3_muladds(tmp, cameraSpeed, c->cameraWorldPos);
         moved = true;
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
@@ -82,11 +84,17 @@ void camera_process_input(camera * c, GLFWwindow * window, float delta_time){
         c->speed = 30.0f;
     }
 
+    c->cameraPos[0] = fmodf(c->cameraWorldPos[0], (float)CHUNK_X_SIZE);
+    if (c->cameraPos[0] < 0.f) c->cameraPos[0] += (float)CHUNK_X_SIZE;
+    c->cameraPos[1] = c->cameraWorldPos[1];
+    c->cameraPos[2] = fmodf(c->cameraWorldPos[2], (float)CHUNK_Z_SIZE);
+    if (c->cameraPos[2] < 0.f) c->cameraPos[2] += (float)CHUNK_Z_SIZE;
+
     // Updates the view matrix
     if (moved){
         glm_vec3_add(c->cameraPos, c->cameraFront, tmp);
         glm_lookat(c->cameraPos, tmp, c->cameraUp, c->view);
-        // if (rand()%10 == 0) printf("Position x,y,z : %.2f,%.2f,%.2f\n Block %lf,%lf\n", c->cameraPos[0], c->cameraPos[1], c->cameraPos[2], chunk_norm_pos_x(NULL,c->cameraPos[0]), chunk_norm_pos_x(NULL,c->cameraPos[2]));
+        if (rand()%10 == 0) printf("Position x,y,z : %.2f,%.2f,%.2f\n Block %lf,%lf\n", c->cameraPos[0], c->cameraPos[1], c->cameraPos[2], chunk_norm_pos_x(NULL,c->cameraPos[0]), chunk_norm_pos_x(NULL,c->cameraPos[2]));
     }
 }
 

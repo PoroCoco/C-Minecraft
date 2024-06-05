@@ -46,7 +46,7 @@ frustum frustum_init(camera *cam, float aspect, float fovY, float zNear, float z
     glm_vec3_norm(frustum.nearFace.normal);
 
     glm_vec3_scale(cam->cameraFront, zNear, tmp);
-    glm_vec3_add(tmp, cam->cameraPos, tmp);
+    glm_vec3_add(tmp, cam->cameraWorldPos, tmp);
     frustum.nearFace.distance = glm_vec3_dot(frustum.nearFace.normal, tmp);
 
     // farFace
@@ -54,7 +54,7 @@ frustum frustum_init(camera *cam, float aspect, float fovY, float zNear, float z
     glm_vec3_scale(frustum.farFace.normal, -1.f, frustum.farFace.normal);
     glm_vec3_norm(frustum.farFace.normal);
 
-    glm_vec3_add(cam->cameraPos, frontMultFar, tmp);
+    glm_vec3_add(cam->cameraWorldPos, frontMultFar, tmp);
     frustum.farFace.distance = glm_vec3_dot(frustum.farFace.normal, tmp);
     
     // rightFace
@@ -63,7 +63,7 @@ frustum frustum_init(camera *cam, float aspect, float fovY, float zNear, float z
     glm_vec3_cross(tmp, cam->cameraUp, frustum.rightFace.normal);
     glm_vec3_norm(frustum.rightFace.normal);
 
-    frustum.rightFace.distance = glm_vec3_dot(frustum.rightFace.normal, cam->cameraPos);
+    frustum.rightFace.distance = glm_vec3_dot(frustum.rightFace.normal, cam->cameraWorldPos);
 
     // leftFace
     glm_vec3_scale(camera_right, halfHSide, tmp);
@@ -71,7 +71,7 @@ frustum frustum_init(camera *cam, float aspect, float fovY, float zNear, float z
     glm_vec3_cross(cam->cameraUp, tmp, frustum.leftFace.normal);
     glm_vec3_norm(frustum.leftFace.normal);
 
-    frustum.leftFace.distance = glm_vec3_dot(frustum.leftFace.normal, cam->cameraPos);
+    frustum.leftFace.distance = glm_vec3_dot(frustum.leftFace.normal, cam->cameraWorldPos);
 
     // topFace
     glm_vec3_scale(cam->cameraUp, halfVSide, tmp);
@@ -79,7 +79,7 @@ frustum frustum_init(camera *cam, float aspect, float fovY, float zNear, float z
     glm_vec3_cross(camera_right, tmp, frustum.topFace.normal);
     glm_vec3_norm(frustum.topFace.normal);
 
-    frustum.topFace.distance = glm_vec3_dot(frustum.topFace.normal, cam->cameraPos);
+    frustum.topFace.distance = glm_vec3_dot(frustum.topFace.normal, cam->cameraWorldPos);
 
     // bottomFace
     glm_vec3_scale(cam->cameraUp, halfVSide, tmp);
@@ -87,7 +87,7 @@ frustum frustum_init(camera *cam, float aspect, float fovY, float zNear, float z
     glm_vec3_cross(tmp, camera_right, frustum.bottomFace.normal);
     glm_vec3_norm(frustum.bottomFace.normal);
 
-    frustum.bottomFace.distance = glm_vec3_dot(frustum.bottomFace.normal, cam->cameraPos);
+    frustum.bottomFace.distance = glm_vec3_dot(frustum.bottomFace.normal, cam->cameraWorldPos);
 
     return frustum;
 }
@@ -106,5 +106,5 @@ void world_update_frustum(world *w, player *p, float fov, float aspect, float z_
         loaded_count++;
         total_chunk_memory += (float)chunk_sizeof(c);
     }
-    printf("Total chunks : %d, loaded : %d, in frustum %d, total memory(GB) : %f\n", TOTAL_CHUNKS, loaded_count, frustum_count, total_chunk_memory/1000000000.f);
+    // printf("Total chunks : %d, loaded : %d, in frustum %d, total memory(GB) : %f\n", TOTAL_CHUNKS, loaded_count, frustum_count, total_chunk_memory/1000000000.f);
 }
