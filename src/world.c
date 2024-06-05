@@ -21,10 +21,10 @@ world * world_init(gpu * gpu){
     world * w = malloc(sizeof(*w));
     assert(w);
     w->gpu = gpu;
-    w->chunk_to_acquire = queue_init(2*TOTAL_CHUNKS*20);
+    w->chunk_to_acquire = queue_og_init(2*TOTAL_CHUNKS*20);
     w->loaded_chunks = fixray_init(TOTAL_CHUNKS);
     w->cache = htb_init(100000);
-    // Enqueues all the starting chunks in a kind of spiral pattern (square radius increasing until render distance)
+    // Enqueue_ogs all the starting chunks in a kind of spiral pattern (square radius increasing until render distance)
     for(int square_radius = 0; square_radius <= RENDER_DISTANCE; square_radius++){
     for (int z = -square_radius ; z < square_radius+1 ; z++){
         for (int x = -square_radius;  x < square_radius+1; x++){
@@ -35,8 +35,8 @@ world * world_init(gpu * gpu){
                 gpu_upload(w->gpu, chunk_index, c);
                 c->ready = true;
             }else{
-                queue_enqueue(w->chunk_to_acquire, (void*)(intptr_t)x);
-                queue_enqueue(w->chunk_to_acquire, (void*)(intptr_t)z);
+                queue_og_enqueue_og(w->chunk_to_acquire, (void*)(intptr_t)x);
+                queue_og_enqueue_og(w->chunk_to_acquire, (void*)(intptr_t)z);
             }
         }
     }
@@ -195,11 +195,11 @@ void world_update_acquired(world * w, int *acquired){
         // create a thread that generate said chunk, including its mesh data then fixray and upload
         x = acquired[index*2 + 0];
         z = acquired[index*2 + 1];
-        queue_enqueue(w->chunk_to_acquire, (void*)(intptr_t)x);
-        queue_enqueue(w->chunk_to_acquire, (void*)(intptr_t)z);
+        queue_og_enqueue_og(w->chunk_to_acquire, (void*)(intptr_t)x);
+        queue_og_enqueue_og(w->chunk_to_acquire, (void*)(intptr_t)z);
         index++;
     }
-    printf("Acquired %d\n", index);
+    // printf("Acquired %d\n", index);
 }
 
 bool chunk_in_range(chunk *c, int center_x, int center_z){
@@ -218,13 +218,12 @@ bool world_update_position(world * w, float x, float z){
     static int acquired[TOTAL_CHUNKS*2+1]; //x0,y0,x1,y1 INT_MAX terminated;
     acquired[0] = INT_MAX;
 
-
     // printf("center chunk faces %u, total sizeof in bytes : %zu\n", w->center_chunk->faces_count, chunk_sizeof(w->center_chunk));
     // get last chunk
     int count = 0;
-    while (!queue_is_empty(w->chunk_to_acquire) && count < CHUNK_LOAD_PER_FRAME){
-        int x = (int)(intptr_t)queue_dequeue(w->chunk_to_acquire);
-        int z = (int)(intptr_t)queue_dequeue(w->chunk_to_acquire);
+    while (!queue_og_is_empty(w->chunk_to_acquire) && count < CHUNK_LOAD_PER_FRAME){
+        int x = (int)(intptr_t)queue_og_dequeue_og(w->chunk_to_acquire);
+        int z = (int)(intptr_t)queue_og_dequeue_og(w->chunk_to_acquire);
         if (x >= (new_center_x - (RENDER_DISTANCE)) &&
             z >= (new_center_z - (RENDER_DISTANCE)) &&
             x < (new_center_x + (RENDER_DISTANCE)) &&
@@ -252,12 +251,8 @@ bool world_update_position(world * w, float x, float z){
         printf("new center chunk %d,%d (previous %d,%d)\n", new_center_x, new_center_z, w->center_chunk->x, w->center_chunk->z);
         
         // Find the chunks that were discarded 
-        // ToDo : just like the acquired chunks this could be computed by a function instead of looping
-        
         world_compute_acquired_chunks(w->center_chunk->x, new_center_x, w->center_chunk->z, new_center_z, acquired);
-
         world_update_acquired(w, acquired);
-
 
         w->center_chunk = world_get_loaded_chunk(w, new_center_x, new_center_z);
         // Force the chunk generation
@@ -269,7 +264,7 @@ bool world_update_position(world * w, float x, float z){
             w->center_chunk = world_get_loaded_chunk(w, new_center_x, new_center_z);
         }
         assert(w->center_chunk);
-        printf("chunk cache bucket used %zu, total entries %zu\n", w->cache->used_buckets, w->cache->total_entries);
+        // printf("chunk cache bucket used %zu, total entries %zu\n", w->cache->used_buckets, w->cache->total_entries);
         return true;
     }
     return false;
@@ -325,7 +320,7 @@ void world_cleanup(world * w){
     }
 
     htb_cleanup(w->cache, (void (*)(void*))chunk_cleanup);
-    queue_cleanup(w->chunk_to_acquire);
+    queue_og_cleanup(w->chunk_to_acquire);
     fixray_cleanup(w->loaded_chunks);
     free(w);
 }

@@ -230,7 +230,7 @@ void _gpu_create_command(gpu * gpu, enum command_types type, void * args){
     assert(com);
     com->type = type;
     com->args = args;
-    queue_enqueue(gpu->command_queue, (void *) com);
+    queue_produce(gpu->command_queue, (void *) com);
 }
 
 void gpu_set_VAO(gpu* gpu, uint64_t vao_index){
@@ -478,108 +478,107 @@ void* render_thread_init(void * thread_args){
     printf("render thread looping\n");
     bool running = true;
     while(running){
-        if(!queue_is_empty(gpu->command_queue)){
-            gpu_command *command = queue_dequeue(gpu->command_queue);
-            switch (command->type)
-            {
-            case COMMAND_UPLOAD:
-            {
-                struct gpu_command_upload * args = command->args;
-                _gpu_upload(gpu, args->chunk_index, args->c);
-                break; 
-            }    
-            case COMMAND_DRAW_CHUNK:
-            {
-                struct gpu_command_draw_chunk * args = command->args;
-                _gpu_draw_chunk(gpu, args);
-                break; 
-            }    
-            case COMMAND_SCREEN_CLEAR:
-            {
-                _gpu_clear_screen(gpu);
-                break; 
-            }    
-            case COMMAND_DRAW_END:
-            {
-                glfwSwapBuffers(*th_args->window_handle);
-                glfwPollEvents();
-                pthread_mutex_unlock(&gpu->draw_mutex);
-                break; 
-            }    
-            case COMMAND_DRAW_START:
-            {
-                pthread_mutex_lock(&gpu->draw_mutex);
-                break; 
-            }    
-            case COMMAND_SHADER_INIT:
-            {
-                struct gpu_command_shader_init * args = command->args;
-                _gpu_shader_init(gpu, args);
-                break; 
-            }    
-            case COMMAND_SHADER_USE:
-            {
-                struct gpu_command_shader_init * args = command->args;
-                _gpu_shader_use(gpu, args);
-                break; 
-            }    
-            case COMMAND_DRAW_SKYBOX:
-            {
-                struct gpu_command_draw_skybox * args = command->args;
-                _gpu_draw_skybox(gpu, args);
-                break; 
-            }    
-            case COMMAND_SHADER_SET_M4:
-            {
-                struct gpu_command_shader_mat4 * args = command->args;
-                _gpu_shader_set_m4(gpu, args);
-                break; 
-            }    
-            case COMMAND_SHADER_SET_TRANSFORM_MAT:
-            {
-                struct gpu_command_shader_transform_mat * args = command->args;
-                _gpu_shader_set_transform_matrices(gpu, args);
-                break; 
-            }    
-            case COMMAND_SHADER_SET_FLOAT:
-            {
-                struct gpu_command_shader_float * args = command->args;
-                _gpu_shader_set_float(gpu, args);
-                break; 
-            }
-            case COMMAND_SHADER_SET_FLOAT4:
-            {
-                struct gpu_command_shader_vec4 * args = command->args;
-                _gpu_shader_set_float4(gpu, args);
-                break; 
-            }
-            case COMMAND_SHADER_CLEANUP:
-            {
-                struct gpu_command_shader_init * args = command->args;
-                _gpu_shader_cleanup(gpu, args);
-                break; 
-            }   
-            case COMMAND_SHADER_RELOAD:
-            {
-                _gpu_shader_reload(gpu);
-                break; 
-            }   
-            case COMMAND_WIREFRAME:
-            {
-                _gpu_cycle_wireframe(gpu);
-                break;
-            }
-            case COMMAND_CLEANUP:
-            {
-                running = false;
-                break;
-            }
-            default:
-                break;
-            }
-            free(command->args);
-            free(command);
+        gpu_command *command = queue_consume(gpu->command_queue);
+
+        switch (command->type)
+        {
+        case COMMAND_UPLOAD:
+        {
+            struct gpu_command_upload * args = command->args;
+            _gpu_upload(gpu, args->chunk_index, args->c);
+            break; 
+        }    
+        case COMMAND_DRAW_CHUNK:
+        {
+            struct gpu_command_draw_chunk * args = command->args;
+            _gpu_draw_chunk(gpu, args);
+            break; 
+        }    
+        case COMMAND_SCREEN_CLEAR:
+        {
+            _gpu_clear_screen(gpu);
+            break; 
+        }    
+        case COMMAND_DRAW_END:
+        {
+            glfwSwapBuffers(*th_args->window_handle);
+            glfwPollEvents();
+            pthread_mutex_unlock(&gpu->draw_mutex);
+            break; 
+        }    
+        case COMMAND_DRAW_START:
+        {
+            pthread_mutex_lock(&gpu->draw_mutex);
+            break; 
+        }    
+        case COMMAND_SHADER_INIT:
+        {
+            struct gpu_command_shader_init * args = command->args;
+            _gpu_shader_init(gpu, args);
+            break; 
+        }    
+        case COMMAND_SHADER_USE:
+        {
+            struct gpu_command_shader_init * args = command->args;
+            _gpu_shader_use(gpu, args);
+            break; 
+        }    
+        case COMMAND_DRAW_SKYBOX:
+        {
+            struct gpu_command_draw_skybox * args = command->args;
+            _gpu_draw_skybox(gpu, args);
+            break; 
+        }    
+        case COMMAND_SHADER_SET_M4:
+        {
+            struct gpu_command_shader_mat4 * args = command->args;
+            _gpu_shader_set_m4(gpu, args);
+            break; 
+        }    
+        case COMMAND_SHADER_SET_TRANSFORM_MAT:
+        {
+            struct gpu_command_shader_transform_mat * args = command->args;
+            _gpu_shader_set_transform_matrices(gpu, args);
+            break; 
+        }    
+        case COMMAND_SHADER_SET_FLOAT:
+        {
+            struct gpu_command_shader_float * args = command->args;
+            _gpu_shader_set_float(gpu, args);
+            break; 
         }
+        case COMMAND_SHADER_SET_FLOAT4:
+        {
+            struct gpu_command_shader_vec4 * args = command->args;
+            _gpu_shader_set_float4(gpu, args);
+            break; 
+        }
+        case COMMAND_SHADER_CLEANUP:
+        {
+            struct gpu_command_shader_init * args = command->args;
+            _gpu_shader_cleanup(gpu, args);
+            break; 
+        }   
+        case COMMAND_SHADER_RELOAD:
+        {
+            _gpu_shader_reload(gpu);
+            break; 
+        }   
+        case COMMAND_WIREFRAME:
+        {
+            _gpu_cycle_wireframe(gpu);
+            break;
+        }
+        case COMMAND_CLEANUP:
+        {
+            running = false;
+            break;
+        }
+        default:
+            break;
+        }
+        free(command->args);
+        free(command);
     }
 
     return 0;
