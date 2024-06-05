@@ -260,6 +260,14 @@ bool world_update_position(world * w, float x, float z){
 
 
         w->center_chunk = world_get_loaded_chunk(w, new_center_x, new_center_z);
+        // Force the chunk generation
+        if (!w->center_chunk){
+            chunk * c = chunk_init(new_center_x, new_center_z);
+            uint64_t chunk_index = fixray_add(w->loaded_chunks, c);
+            gpu_upload(w->gpu, chunk_index, c);
+            c->ready = true;
+            w->center_chunk = world_get_loaded_chunk(w, new_center_x, new_center_z);
+        }
         assert(w->center_chunk);
         printf("chunk cache bucket used %zu, total entries %zu\n", w->cache->used_buckets, w->cache->total_entries);
         return true;
