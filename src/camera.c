@@ -94,7 +94,6 @@ void camera_process_input(camera * c, GLFWwindow * window, float delta_time){
     if (moved){
         glm_vec3_add(c->cameraPos, c->cameraFront, tmp);
         glm_lookat(c->cameraPos, tmp, c->cameraUp, c->view);
-        if (rand()%10 == 0) printf("Position x,y,z : %.2f,%.2f,%.2f\n Block %lf,%lf\n", c->cameraPos[0], c->cameraPos[1], c->cameraPos[2], chunk_norm_pos_x(NULL,c->cameraPos[0]), chunk_norm_pos_x(NULL,c->cameraPos[2]));
     }
 }
 
