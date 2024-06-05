@@ -122,7 +122,6 @@ typedef struct gpu_command {
 
 struct render_thread_args {
     volatile bool * ready;
-    queue ** command_queue_handle;
     gpu ** gpu_handle;
     atlas * atlas;
     camera * cam;

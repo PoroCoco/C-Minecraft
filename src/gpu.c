@@ -471,7 +471,6 @@ void* render_thread_init(void * thread_args){
 
     *th_args->window_handle = window_init(WIDTH, HEIGHT, th_args->cam);;
     gpu * gpu = gpu_init(th_args->atlas);
-    *th_args->command_queue_handle = gpu->command_queue;
     *th_args->gpu_handle = gpu;
     *th_args->ready = true;
 

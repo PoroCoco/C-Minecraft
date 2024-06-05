@@ -75,13 +75,11 @@ int main(int argc, char const *argv[])
     camera * cam = camera_init();
     atlas * atlas = atlas_init();
     gpu * gpu;
-    queue * command_queue_handle;
     GLFWwindow* window;
     volatile bool render_thread_ready = false;
     pthread_t render_thread;
     struct render_thread_args args = {
         .atlas = atlas,
-        .command_queue_handle = &command_queue_handle,
         .gpu_handle = &gpu,
         .ready = &render_thread_ready,
         .cam = cam,
