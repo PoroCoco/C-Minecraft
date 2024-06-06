@@ -7,12 +7,10 @@
 #include <stb_image.h>
 
 static const float vertices_face_south[] = {
-    0.f, 0.f,  1.f,
     1.f, 0.f,  1.f,
     1.f,  1.f,  1.f,
-    1.f,  1.f,  1.f,
+    0.f, 0.f,  1.f,
     0.f,  1.f,  1.f,
-    0.f, 0.f,  1.f
 };
 
 float skybox_vertices[] = {
@@ -145,7 +143,7 @@ gpu * gpu_init(atlas * atlas){
         DEBUG_GL(glBindVertexArray(gpu->VAO[i]));
         glBindBuffer(GL_ARRAY_BUFFER, gpu->VBO_face);
         // Upload the data for a face
-        DEBUG_GL(glBufferData(GL_ARRAY_BUFFER, sizeof(float)*ATTRIBUTE_PER_VERTEX*6, vertices_face_south, GL_STATIC_DRAW)); 
+        DEBUG_GL(glBufferData(GL_ARRAY_BUFFER, sizeof(float)*ATTRIBUTE_PER_VERTEX*4, vertices_face_south, GL_STATIC_DRAW)); 
         // setting its attributes
         DEBUG_GL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, ATTRIBUTE_PER_VERTEX * sizeof(float), (void*)0));
         DEBUG_GL(glEnableVertexAttribArray(0));
@@ -267,7 +265,7 @@ void gpu_draw_chunk(gpu* gpu, uint64_t index){
 
 void _gpu_draw_chunk(gpu* gpu, struct gpu_command_draw_chunk *args){
     gpu_set_VAO(gpu, args->index);
-    DEBUG_GL(glDrawArraysInstanced(GL_TRIANGLES, 0, 6, gpu->instances_count[args->index]));
+    DEBUG_GL(glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, gpu->instances_count[args->index]));
 }
 
 
